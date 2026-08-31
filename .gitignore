@@ -1,0 +1,4 @@
+extracted_rar/
+*.rar
+*.zip
+.DS_Store
