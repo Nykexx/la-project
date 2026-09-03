@@ -6,11 +6,36 @@
 <meta name="theme-color" content="#07080a" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<title>LA Project — Архитектурное бюро и студия дизайна интерьеров</title>
-<meta name="description" content="Архитектурное проектирование жилых резиденций и дизайн интерьеров премиум-класса. Студия LA Project, Алматы. Опыт с 1996 года, государственная лицензия ГАСК." />
+<title>Архитектурное бюро в Алматы — проектирование домов и дизайн интерьеров | LA Project</title>
+<meta name="description" content="Архитектурное проектирование жилых резиденций и дизайн интерьеров премиум-класса в Алматы. Студия LA Project: опыт с 1996 года, государственная лицензия ГАСК, авторский надзор и полный цикл под ключ." />
+<link rel="canonical" href="https://laproject.kz/" />
+
+<!-- Карточка ссылки в WhatsApp, Telegram, Instagram, Facebook -->
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="LA Project" />
+<meta property="og:locale" content="ru_RU" />
+<meta property="og:url" content="https://laproject.kz/" />
+<meta property="og:title" content="LA Project — архитектурное бюро и студия дизайна интерьеров в Алматы" />
+<meta property="og:description" content="Проектируем и реализуем резиденции и интерьеры премиум-класса с 1996 года. Полный цикл: архитектура, дизайн, комплектация, авторский надзор." />
+<meta property="og:image" content="https://laproject.kz/img/og-cover.jpg" />
+<meta property="og:image:secure_url" content="https://laproject.kz/img/og-cover.jpg" />
+<meta property="og:image:type" content="image/jpeg" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:alt" content="Резиденция по проекту LA Project в Алматы" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="LA Project — архитектурное бюро и студия дизайна интерьеров в Алматы" />
+<meta name="twitter:description" content="Проектируем и реализуем резиденции и интерьеры премиум-класса с 1996 года. Полный цикл под ключ." />
+<meta name="twitter:image" content="https://laproject.kz/img/og-cover.jpg" />
+
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,600&family=Manrope:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<!-- LCP: первый кадр hero начинает грузиться ещё при разборе <head> -->
+<link rel="preload" as="image" fetchpriority="high"
+      href="img/hotel-lobby/00.jpg"
+      imagesrcset="img/hotel-lobby/00-640.webp 640w, img/hotel-lobby/00-1100.webp 1100w, img/hotel-lobby/00-1600.webp 1600w, img/hotel-lobby/00.webp 2200w"
+      imagesizes="100vw" />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 38 35'%3E%3Cpath fill='%23d4b68e' d='M1,0 L4.6,0 L14.2,9.9 L17.6,14.3 L24.2,1.9 L25.8,1.9 L37.8,22.4 L35.6,26.9 L33.2,26.9 L22.2,22.5 L19.7,26.9 L19.7,28.6 L16.6,34.7 L13.2,34.7 L0,28.4 L0,0.9 Z'/%3E%3C/svg%3E" />
 <style>
 :root {
@@ -52,6 +77,12 @@ body.theme-light {
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* <picture> нужен только ради srcset — из раскладки он исчезает,
+   и все существующие правила вида «.card-img img» продолжают работать.
+   Исключение — .hero-slide-bg ниже: там picture сам является слоем. */
+picture { display: contents; }
+img { max-width: 100%; }
 html { scroll-behavior: smooth; background: var(--bg); color: var(--text); }
 body {
   font-family: 'Manrope', system-ui, -apple-system, sans-serif;
@@ -482,22 +513,71 @@ body.theme-light .mmenu a {
   inset: 0;
   background: rgba(7, 8, 10, 0.98);
   backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
   z-index: 490;
   transform: translateY(-100%);
-  transition: transform 0.6s var(--ease-cinematic);
-  padding: 120px 36px;
+  /* Меню выше экрана прячем ещё и по видимости: если пунктов станет больше,
+     содержимое не «выглянет» из-под шапки. */
+  visibility: hidden;
+  opacity: 0;
+  transition: transform 0.6s var(--ease-cinematic),
+              opacity 0.4s ease,
+              visibility 0s linear 0.6s;
+  padding: calc(84px + env(safe-area-inset-top)) 28px calc(28px + env(safe-area-inset-bottom));
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 4px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
-.mmenu.open { transform: none; }
-.mmenu a {
+.mmenu.open {
+  transform: none;
+  visibility: visible;
+  opacity: 1;
+  transition: transform 0.6s var(--ease-cinematic),
+              opacity 0.3s ease,
+              visibility 0s;
+}
+.mmenu > a {
   font-family: 'Cormorant Garamond', Georgia, serif;
-  font-size: 34px;
+  font-size: clamp(26px, 8vw, 34px);
+  line-height: 1.25;
   color: #fff;
-  padding: 12px 0;
+  padding: 14px 0;
   border-bottom: 1px solid var(--border);
+  /* Пункты въезжают по очереди — задержка задаётся в .mmenu.open ниже */
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity 0.5s ease, transform 0.5s var(--ease-cinematic);
 }
+.mmenu.open > a { opacity: 1; transform: none; }
+.mmenu.open > a:nth-child(1) { transition-delay: 0.10s; }
+.mmenu.open > a:nth-child(2) { transition-delay: 0.16s; }
+.mmenu.open > a:nth-child(3) { transition-delay: 0.22s; }
+.mmenu.open > a:nth-child(4) { transition-delay: 0.28s; }
+.mmenu.open > a:nth-child(5) { transition-delay: 0.34s; }
+.mmenu.open > a:nth-child(6) { transition-delay: 0.40s; }
+
+/* Контакты в подвале меню — чтобы связаться можно было с любого экрана */
+.mmenu-contacts {
+  margin-top: auto;
+  padding-top: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.mmenu-contacts .mm-phone {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 26px;
+  color: var(--accent);
+}
+.mmenu-contacts .mm-mail {
+  font-family: 'Manrope', sans-serif;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.mmenu-contacts .mm-btn { width: 100%; text-align: center; }
 
 /* ── 1. Hero Слайдер (Studia 54 Style) ── */
 .hero-slider {
@@ -528,10 +608,16 @@ body.theme-light .mmenu a {
 .hero-slide-bg {
   position: absolute;
   inset: 0;
-  background-size: cover;
-  background-position: center;
+  display: block;
   transform: scale(1.08);
   transition: transform 9s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.hero-slide-bg img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
 }
 .hero-slide.active .hero-slide-bg {
   transform: scale(1);
@@ -879,14 +965,21 @@ body.theme-light .mmenu a {
 }
 
 /* ── 4. Как строится дом (Белый чертёж + интерактивные шаги) ── */
+/* Обёртка кадра и подписи: на десктопе подпись позиционируется
+   относительно неё и лежит поверх нижней части кадра.
+   Предел высоты кадра (740px при 16/9) задаём шириной обёртки —
+   иначе подпись оказывается шире самого кадра. */
+.st-stage {
+  position: relative;
+  margin: 32px auto 0;
+  max-width: calc(740px * 16 / 9);
+}
 .st-track {
   position: relative;
   aspect-ratio: 16 / 9;
-  max-height: 740px;
   background: #0d0f13;
   overflow: hidden;
   border: 1px solid var(--border);
-  margin-top: 32px;
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
 }
 .st-layer {
@@ -1367,6 +1460,7 @@ body.theme-light .mmenu a {
   overflow-y: auto;
 }
 .lightbox.open { opacity: 1; pointer-events: auto; }
+.lightbox-cta-bar { display: none; }
 .lightbox-in {
   max-width: 1400px;
   margin: 0 auto;
@@ -1500,7 +1594,7 @@ body.theme-light .mmenu a {
   .hero-main-logo { height: 38px; }
   .hero-brand-heading { gap: 12px; }
   .hero-brand-name { font-size: clamp(28px, 8.2vw, 42px); }
-  .hero-slogan { font-size: 13.5px; line-height: 1.6; margin-top: 14px; max-width: 100%; }
+  .hero-slogan { font-size: 14.5px; line-height: 1.62; margin-top: 14px; max-width: 100%; }
   .hero-actions { margin-top: 24px; gap: 10px; }
   .hero-actions .btn { height: 48px; font-size: 11px; }
   .hero-bullet { width: 32px; }
@@ -1522,7 +1616,8 @@ body.theme-light .mmenu a {
   .svc-manifest p { font-size: 14px; line-height: 1.7; }
   
   /* Как строится дом */
-  .st-track { aspect-ratio: 4 / 3; max-height: 480px; }
+  .st-track { aspect-ratio: 4 / 3; }
+  .st-stage { max-width: none; }
   .st-cap { padding: 24px 20px; }
   .st-cap .t { font-size: clamp(20px, 5.5vw, 28px); }
   .st-cap .d { font-size: 12.5px; }
@@ -1590,10 +1685,225 @@ body.theme-light .mmenu a {
   .totop { right: 16px; bottom: 16px; width: 40px; height: 40px; }
 }
 
-@media (max-width: 420px) {
+/* Порог именно 360px: 375–430px — это iPhone SE, 13, 15 и весь
+   массовый Android, там две колонки читаются лучше одной длинной. */
+@media (max-width: 360px) {
   .st-nav-tabs { grid-template-columns: 1fr; }
   .fe-stats { grid-template-columns: 1fr; }
   .lightbox-specs { grid-template-columns: 1fr; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   МОБИЛЬНАЯ ВЕРСИЯ
+   Блок идёт последним, поэтому переопределяет всё, что выше.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Тач-устройства: наведения нет, поэтому все hover-эффекты
+      выключаем — иначе на тапе они «залипают» до следующего касания ── */
+@media (hover: none) {
+  .card:hover .card-img img,
+  .card:hover .card-img { transform: none; box-shadow: none; }
+  .btn:hover, .svc-box:hover, .adv-card:hover { transform: none; }
+}
+
+/* Отклик на нажатие вместо наведения */
+@media (pointer: coarse) {
+  * { -webkit-tap-highlight-color: transparent; }
+  .btn:active { transform: scale(0.975); opacity: 0.9; }
+  .card:active .card-img img { transform: scale(1.02); }
+  .st-nav-tab:active, .hero-nav-btn:active, .hero-bullet:active { opacity: 0.65; }
+  /* Минимальная площадь касания 44×44 — рекомендация Apple HIG и WCAG 2.5.8 */
+  .hero-nav-btn, .burger, .theme-toggle, .lightbox-x, .totop {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
+@media (max-width: 768px) {
+  /* ── Учитываем «чёлку» и домашнюю полосу iPhone ── */
+  .nav-in { padding-left: max(18px, env(safe-area-inset-left));
+            padding-right: max(18px, env(safe-area-inset-right)); }
+
+  /* ── HERO ────────────────────────────────────────────────────
+     100vh на мобильном врёт: адресная строка Safari то появляется,
+     то исчезает, и низ экрана обрезается. svh — «малая» высота,
+     она стабильна. min-height: 720px убираем: на iPhone SE это
+     выше экрана и кнопки уезжают за край. */
+  .hero-slider {
+    height: 100svh;
+    min-height: 0;
+    max-height: 900px;
+  }
+  /* На вертикальном экране кадр кадрируем чуть выше центра —
+     так в кадр попадает пространство, а не потолок. */
+  .hero-slide-bg img { object-position: center 42%; }
+  /* Кадры интерьеров часто светлые: без плотной подложки белый
+     заголовок на них нечитаем. Затемняем нижние ~60% — ровно ту зону,
+     где стоят заголовок, слоган и кнопки; верх кадра остаётся светлым. */
+  .hero-overlay {
+    background:
+      linear-gradient(to top,
+        rgba(7, 8, 10, 0.95) 0%,
+        rgba(7, 8, 10, 0.90) 24%,
+        rgba(7, 8, 10, 0.78) 45%,
+        rgba(7, 8, 10, 0.44) 62%,
+        rgba(7, 8, 10, 0.12) 80%,
+        rgba(7, 8, 10, 0.32) 100%);
+  }
+  .hero-content {
+    padding: 0 20px calc(28px + env(safe-area-inset-bottom));
+  }
+  .hero-eyebrow { font-size: 10px; letter-spacing: 0.2em; margin-bottom: 10px; }
+  .hero-slogan { text-shadow: 0 1px 12px rgba(0, 0, 0, 0.55); }
+  .hero-brand-name { text-shadow: 0 2px 20px rgba(0, 0, 0, 0.4); }
+
+  /* Панель управления слайдером: счётчик в одну строку, стрелки крупнее */
+  .hero-bottom-bar { gap: 18px; }
+  .hero-controls {
+    align-items: center;
+    gap: 14px;
+  }
+  .hero-counter {
+    display: flex;
+    align-items: baseline;
+    gap: 3px;
+    white-space: nowrap;
+    font-size: 11px;
+  }
+  .hero-pagination { flex: 1; }
+  .hero-bullet { width: auto; flex: 1; min-width: 0; }
+  .hero-nav-btn { flex: 0 0 auto; font-size: 16px; }
+
+  /* ── Секция «Как строится дом» ───────────────────────────────
+     Подпись поверх кадра на узком экране закрывает сам кадр и
+     плохо читается на светлом чертеже. Выносим её под картинку. */
+  .st-track { aspect-ratio: 3 / 2; }
+  .st-cap,
+  .st-cap.on-light {
+    position: static;
+    /* Светлый градиент нужен только поверх чертежа на десктопе;
+       здесь подпись — самостоятельный блок и живёт в теме сайта. */
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-top: none;
+    padding: 20px 18px 22px;
+    color: var(--text);
+  }
+  .st-cap .n, .st-cap.on-light .n { color: var(--accent); }
+  .st-cap .d, .st-cap.on-light .d { color: var(--text-muted); }
+  .st-cap .t { font-size: clamp(21px, 5.6vw, 28px); }
+  .st-cap .d { font-size: 13px; }
+  .st-final { right: 14px; bottom: 14px; }
+
+  /* ── Карточки проектов ───────────────────────────────────────
+     Кадр 16/11 на вертикальном экране слишком приземистый. */
+  .card-img { aspect-ratio: 4 / 3; }
+  .card-caption { padding-top: 14px; }
+  .card-meta { font-size: 11.5px; }
+
+  /* ── Лайтбокс ────────────────────────────────────────────────
+     Внизу закреплена кнопка — до неё не надо пролистывать
+     весь набор кадров. */
+  .lightbox-in { padding-bottom: calc(104px + env(safe-area-inset-bottom)); }
+  .lightbox-top { padding-top: env(safe-area-inset-top); }
+  .lightbox-x {
+    width: 44px;
+    height: 44px;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--border-light);
+    background: rgba(255, 255, 255, 0.06);
+  }
+  .lightbox-cta-bar {
+    display: block;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 20;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+    background: linear-gradient(to top, rgba(5, 6, 8, 0.98) 60%, rgba(5, 6, 8, 0));
+  }
+  .lightbox-cta-bar .btn { width: 100%; height: 52px; }
+  .lightbox .lb-cta-inline { display: none; }
+
+  /* ── Форма ───────────────────────────────────────────────────── */
+  .brief-r { padding-bottom: 32px; }
+  .f-g label { font-size: 10.5px; }
+
+  /* Кнопка «наверх» на мобильном не нужна: внизу уже стоит панель
+     действий, а две плавающие кнопки в одном углу мешают друг другу. */
+  .totop { display: none; }
+
+  /* Липкая панель перекрывает последнюю строку футера — освобождаем место */
+  .foot-bot { padding-bottom: calc(92px + env(safe-area-inset-bottom)); }
+}
+
+/* ── Липкая панель действий внизу экрана ──────────────────────
+   Страница длинная (около 18 000 px). Без этой панели, чтобы
+   позвонить, нужно долистать до самого низа — здесь теряются заявки. */
+.mobile-cta {
+  display: none;
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 480;
+  padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+  gap: 8px;
+  background: rgba(7, 8, 10, 0.92);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-top: 1px solid var(--border);
+  transform: translateY(110%);
+  transition: transform 0.45s var(--ease-cinematic);
+}
+body.theme-light .mobile-cta { background: rgba(248, 247, 244, 0.94); }
+.mobile-cta.on { transform: none; }
+/* Прячем, когда открыт лайтбокс или меню — там свои действия */
+body.lb-open .mobile-cta,
+body.menu-open .mobile-cta { transform: translateY(110%); }
+.mobile-cta a {
+  flex: 1;
+  height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-weight: 600;
+  border: 1px solid var(--border-gold);
+  color: var(--accent);
+  transition: opacity 0.2s ease;
+}
+.mobile-cta a.primary {
+  background: var(--accent);
+  color: #07080a;
+  border-color: var(--accent);
+}
+.mobile-cta a:active { opacity: 0.75; }
+.mobile-cta svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.8; }
+
+@media (max-width: 768px) {
+  .mobile-cta { display: flex; }
+}
+
+/* ── Уважение к системной настройке «меньше движения» ──────────
+   На сайте автослайдер, автосмена стадий и параллакс — для людей
+   с вестибулярными нарушениями это физически неприятно. */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .hero-slide-bg { transform: none !important; }
+  .marquee-track { animation: none !important; }
+  .reveal { opacity: 1 !important; transform: none !important; }
 }
 </style>
 </head>
@@ -1642,34 +1952,43 @@ body.theme-light .mmenu a {
   <a href="#benefits">Что получает заказчик</a>
   <a href="#about">О нас</a>
   <a href="#brief">Контакты</a>
-  <div style="margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border);">
-    <button class="btn btn-line" id="theme-toggle-m" style="width: 100%; height: 48px;">
-      Переключить тему (Светлая / Тёмная)
+  <div class="mmenu-contacts">
+    <a class="mm-phone" href="tel:+77017864680">+7 701 786 46 80</a>
+    <a class="mm-mail" href="mailto:laproject.kz@gmail.com">laproject.kz@gmail.com</a>
+    <a href="https://wa.me/77017864680" target="_blank" rel="noopener"
+       class="btn btn-gold mm-btn" style="height: 52px; margin-top: 14px;">
+      Написать в WhatsApp ↗
+    </a>
+    <button class="btn btn-line mm-btn" id="theme-toggle-m" style="height: 48px;">
+      Сменить тему
     </button>
   </div>
 </div>
 
 <!-- ─── 1. ХИРО ───────────────────────────────────────── -->
 <section class="hero-slider" id="top">
+  <!-- Первый слайд отрисован в разметке — он и есть LCP, грузится сразу.
+       Остальные подставляются из data-key скриптом, когда до них доходит очередь. -->
   <div class="hero-slides" id="hero-slides">
-    <div class="hero-slide active" data-index="0">
-      <div class="hero-slide-bg" style="background-image: url('img/hotel-lobby/00.jpg');"></div>
+    <div class="hero-slide active" data-index="0" data-key="hotel-lobby/00"
+         data-tag="Лобби и ресторан отеля · Алматы">
+      <picture class="hero-slide-bg">
+        <source type="image/webp" sizes="100vw"
+                srcset="img/hotel-lobby/00-640.webp 640w, img/hotel-lobby/00-1100.webp 1100w, img/hotel-lobby/00-1600.webp 1600w, img/hotel-lobby/00.webp 2200w" />
+        <img src="img/hotel-lobby/00.jpg" alt="Лобби и ресторан отеля в Алматы"
+             width="2500" height="1500" fetchpriority="high" decoding="async" />
+      </picture>
     </div>
-    <div class="hero-slide" data-index="1">
-      <div class="hero-slide-bg" style="background-image: url('img/hotel-lobby/01.jpg');"></div>
-    </div>
-    <div class="hero-slide" data-index="2">
-      <div class="hero-slide-bg" style="background-image: url('img/hotel-lobby/02.jpg');"></div>
-    </div>
-    <div class="hero-slide" data-index="3">
-      <div class="hero-slide-bg" style="background-image: url('img/hotel-lobby/03.jpg');"></div>
-    </div>
-    <div class="hero-slide" data-index="4">
-      <div class="hero-slide-bg" style="background-image: url('img/hotel-lobby/04.jpg');"></div>
-    </div>
-    <div class="hero-slide" data-index="5">
-      <div class="hero-slide-bg" style="background-image: url('img/hotel-lobby/06.jpg');"></div>
-    </div>
+    <div class="hero-slide" data-index="1" data-key="hotel-lobby/01"
+         data-tag="Парадный атриум с колоннадой · Алматы"></div>
+    <div class="hero-slide" data-index="2" data-key="hotel-lobby/02"
+         data-tag="Ресторан высокой кухни · Казахстан"></div>
+    <div class="hero-slide" data-index="3" data-key="hotel-lobby/03"
+         data-tag="Лаундж-бар и винная зона · Алматы"></div>
+    <div class="hero-slide" data-index="4" data-key="hotel-lobby/04"
+         data-tag="Приватные залы отеля · Алматы"></div>
+    <div class="hero-slide" data-index="5" data-key="hotel-lobby/06"
+         data-tag="Панорамный атриум · Казахстан"></div>
   </div>
 
   <div class="hero-overlay"></div>
@@ -1863,18 +2182,40 @@ body.theme-light .mmenu a {
     <span class="sec-count">Алматы</span>
   </div>
 
-  <div class="st-track reveal" id="st-track">
-    <div class="st-layer draw on" data-i="0"><img src="img/stages/draw.jpg" alt="Оригинальный фасадный чертёж" /></div>
-    <div class="st-layer" data-i="1"><img src="img/stages/render.jpg" alt="3D-визуализация" /></div>
+  <div class="st-stage reveal">
+    <div class="st-track" id="st-track">
+    <div class="st-layer draw on" data-i="0">
+      <picture>
+        <source type="image/webp" sizes="(max-width: 1200px) 100vw, 1160px"
+                srcset="img/stages/draw-640.webp 640w, img/stages/draw-1100.webp 1100w, img/stages/draw.webp 1168w" />
+        <img src="img/stages/draw.jpg" alt="Оригинальный фасадный чертёж" width="1168" height="698" loading="lazy" decoding="async" />
+      </picture>
+    </div>
+    <div class="st-layer" data-i="1">
+      <picture>
+        <source type="image/webp" sizes="(max-width: 1200px) 100vw, 1160px"
+                srcset="img/stages/render-640.webp 640w, img/stages/render-1100.webp 1100w, img/stages/render.webp 1280w" />
+        <img src="img/stages/render.jpg" alt="3D-визуализация особняка" width="1280" height="904" loading="lazy" decoding="async" />
+      </picture>
+    </div>
     <div class="st-layer" data-i="2">
       <video id="st-video" poster="video/poster.jpg" muted playsinline preload="metadata">
         <source src="video/timelapse.webm" type="video/webm" />
         <source src="video/timelapse.mp4" type="video/mp4" />
       </video>
     </div>
-    <div class="st-layer" data-i="3"><img src="img/stages/real.jpg" alt="Готовый особняк" /></div>
-    <div class="st-cap" id="st-cap"></div>
+    <div class="st-layer" data-i="3">
+      <picture>
+        <source type="image/webp" sizes="(max-width: 1200px) 100vw, 1160px"
+                srcset="img/stages/real-640.webp 640w, img/stages/real-1100.webp 1100w, img/stages/real.webp 1500w" />
+        <img src="img/stages/real.jpg" alt="Готовый особняк в Алматы" width="1500" height="1000" loading="lazy" decoding="async" />
+      </picture>
+    </div>
     <div class="st-final" id="st-final"><button class="btn btn-gold" id="st-open">Открыть проект →</button></div>
+    </div>
+    <!-- Подпись вынесена из .st-track: на десктопе она лежит поверх кадра,
+         на мобильном становится обычным блоком под ним. -->
+    <div class="st-cap" id="st-cap"></div>
   </div>
   <div class="st-bar" id="st-bar">
     <i class="st-seg"></i><i class="st-seg"></i><i class="st-seg"></i><i class="st-seg"></i>
@@ -2022,7 +2363,12 @@ body.theme-light .mmenu a {
   <div class="founder-editorial reveal">
     <div class="fe-grid">
       <div class="fe-media">
-        <img src="img/leyla.jpeg" alt="Лейла Арифова — основатель и ведущий архитектор LA Project" />
+        <picture>
+          <source type="image/webp" sizes="(max-width: 900px) 100vw, 420px"
+                  srcset="img/leyla-640.webp 640w, img/leyla.webp 682w" />
+          <img src="img/leyla.jpg" alt="Лейла Арифова — основатель и ведущий архитектор LA Project"
+               width="682" height="1024" loading="lazy" decoding="async" />
+        </picture>
         <div class="fe-caption">Лейла Арифова · Основатель студии</div>
       </div>
       <div class="fe-article">
@@ -2126,17 +2472,19 @@ body.theme-light .mmenu a {
     <div class="brief-r">
       <div class="f-row">
         <div class="f-g">
-          <label>Имя</label>
-          <input id="f-name" placeholder="Как к вам обращаться" />
+          <label for="f-name">Имя</label>
+          <input id="f-name" name="name" type="text" autocomplete="name"
+                 enterkeyhint="next" placeholder="Как к вам обращаться" />
         </div>
         <div class="f-g">
-          <label>Телефон или WhatsApp</label>
-          <input id="f-contact" placeholder="+7 (___) ___-__-__" />
+          <label for="f-contact">Телефон или WhatsApp</label>
+          <input id="f-contact" name="tel" type="tel" inputmode="tel" autocomplete="tel"
+                 enterkeyhint="next" placeholder="+7 (___) ___-__-__" />
         </div>
       </div>
       <div class="f-row">
         <div class="f-g">
-          <label>Направление</label>
+          <label for="f-dir">Направление</label>
           <select id="f-dir">
             <option>Архитектурное проектирование</option>
             <option>Дизайн интерьера</option>
@@ -2145,7 +2493,7 @@ body.theme-light .mmenu a {
           </select>
         </div>
         <div class="f-g">
-          <label>Тип объекта</label>
+          <label for="f-type">Тип объекта</label>
           <select id="f-type">
             <option>Загородный дом / Резиденция</option>
             <option>Апартаменты / Квартира</option>
@@ -2155,8 +2503,9 @@ body.theme-light .mmenu a {
         </div>
       </div>
       <div class="f-g">
-        <label>Сообщение</label>
-        <textarea id="f-msg" placeholder="Локация, площадь, пожелания по стилю..."></textarea>
+        <label for="f-msg">Сообщение</label>
+        <textarea id="f-msg" name="message" rows="4" enterkeyhint="send"
+                  placeholder="Локация, площадь, пожелания по стилю..."></textarea>
       </div>
       <div style="display: flex; flex-direction: column; gap: 12px;">
         <button class="btn btn-gold" id="f-send" style="height: 48px; width: 100%;">
@@ -2251,14 +2600,64 @@ body.theme-light .mmenu a {
       <div class="lightbox-specs" id="lb-specs"></div>
     </div>
     <div class="lightbox-gallery" id="lb-gallery"></div>
-    <div style="margin-top: 48px; padding-top: 32px; border-top: 1px solid var(--border); text-align: center;">
+    <div class="lb-cta-inline" style="margin-top: 48px; padding-top: 32px; border-top: 1px solid var(--border); text-align: center;">
       <a href="#brief" class="btn btn-gold" id="lb-cta">Обсудить похожий проект →</a>
     </div>
+  </div>
+  <!-- На мобильном та же кнопка закреплена внизу экрана -->
+  <div class="lightbox-cta-bar">
+    <a href="#brief" class="btn btn-gold" id="lb-cta-m">Обсудить похожий проект →</a>
   </div>
 </div>
 
 <button class="totop" id="totop" aria-label="Наверх">↑</button>
 
+<!-- Липкая панель действий (только мобильные): звонок и WhatsApp
+     доступны с любого места страницы, а не только из футера. -->
+<div class="mobile-cta" id="mobile-cta">
+  <a href="tel:+77017864680" aria-label="Позвонить в бюро">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.9v3a2 2 0 01-2.2 2 19.8 19.8 0 01-8.6-3.1 19.5 19.5 0 01-6-6A19.8 19.8 0 012.1 4.2 2 2 0 014.1 2h3a2 2 0 012 1.7c.1 1 .4 1.9.7 2.8a2 2 0 01-.5 2.1L8.1 9.9a16 16 0 006 6l1.3-1.2a2 2 0 012.1-.5c.9.3 1.8.6 2.8.7a2 2 0 011.7 2z"/></svg>
+    Позвонить
+  </a>
+  <a href="https://wa.me/77017864680" target="_blank" rel="noopener" class="primary" aria-label="Написать в WhatsApp">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 01-12.6 7.3L3 20.5l1.8-5.3A8.4 8.4 0 1121 11.5z"/></svg>
+    WhatsApp
+  </a>
+</div>
+
+<!-- ─── АНАЛИТИКА ──────────────────────────────────────
+     ВПИСАТЬ НОМЕР СЧЁТЧИКА: заведите счётчик на metrika.yandex.ru,
+     подставьте его номер вместо null — и цели заработают сами.
+     Цели, которые отправляет app.js:
+       form_submit     — заявка успешно отправлена
+       whatsapp_click  — клик по кнопке WhatsApp
+       phone_click     — клик по телефону
+       email_click     — клик по e-mail
+       project_open    — открыт проект в галерее
+     В Метрике эти цели создаются как «JavaScript-событие» с таким же идентификатором. -->
+<script>
+  window.LA_METRIKA_ID = null; // ← сюда номер счётчика, например 98765432
+</script>
+<script>
+(function (m, e, t, r, i, k, a) {
+  if (!window.LA_METRIKA_ID) return;             // счётчик не задан — ничего не грузим
+  m[i] = m[i] || function () { (m[i].a = m[i].a || []).push(arguments); };
+  m[i].l = 1 * new Date();
+  k = e.createElement(t); a = e.getElementsByTagName(t)[0];
+  k.async = 1; k.src = r; a.parentNode.insertBefore(k, a);
+})(window, document, 'script', 'https://mc.yandex.ru/metrika/tag.js', 'ym');
+
+if (window.LA_METRIKA_ID) {
+  ym(window.LA_METRIKA_ID, 'init', {
+    ssr: true,
+    webvisor: true,
+    clickmap: true,
+    trackLinks: true,
+    accurateTrackBounce: true
+  });
+}
+</script>
+<script src="img-sizes.js"></script>
 <script src="data.js"></script>
 <script src="app.js"></script>
 </body>

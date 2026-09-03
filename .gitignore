@@ -2,3 +2,7 @@ extracted_rar/
 *.rar
 *.zip
 .DS_Store
+
+# Исходники в максимальном разрешении — не деплоятся, хранятся локально
+_unused-img/
+img/_manifest.json

@@ -5,6 +5,76 @@
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => [...(r || document).querySelectorAll(s)];
 
+  /* ── 0. Изображения: srcset и цели аналитики ─────────────────────
+     IMG_SIZES (img-sizes.js) хранит для каждого кадра исходные размеры
+     и список готовых ширин. Из него собираем srcset, чтобы браузер сам
+     выбрал нужный файл, и width/height — чтобы вёрстка не прыгала. */
+
+  function imgSrcset(key) {
+    const meta = (typeof IMG_SIZES !== 'undefined') ? IMG_SIZES[key] : null;
+    if (!meta) return null;
+    const widths = meta[2];
+    const widest = widths[widths.length - 1];
+    return widths
+      .map(w => (w === widest ? `img/${key}.webp ${w}w` : `img/${key}-${w}.webp ${w}w`))
+      .join(', ');
+  }
+
+  // sizes — ширина, которую картинка реально занимает на экране.
+  const SIZES_CARD = '(max-width: 700px) 92vw, (max-width: 1200px) 46vw, 30vw';
+  const SIZES_FULL = '(max-width: 1400px) 100vw, 1304px';
+
+  function picture(key, alt, opts) {
+    opts = opts || {};
+    const meta = (typeof IMG_SIZES !== 'undefined') ? IMG_SIZES[key] : null;
+    const srcset = imgSrcset(key);
+    const dims = meta ? ` width="${meta[0]}" height="${meta[1]}"` : '';
+    const cls = opts.className ? ` class="${opts.className}"` : '';
+    const loading = opts.eager ? '' : ' loading="lazy"';
+    const img = `<img src="img/${key}.jpg" alt="${alt}"${dims}${loading} decoding="async" />`;
+    if (!srcset) return img;
+    return `<picture${cls}>` +
+      `<source type="image/webp" sizes="${opts.sizes || SIZES_CARD}" srcset="${srcset}" />` +
+      img +
+      `</picture>`;
+  }
+
+  /* Блокировка прокрутки фона под меню и лайтбоксом.
+     На iOS одного `overflow: hidden` недостаточно — страница под модалкой
+     всё равно скроллится, поэтому фиксируем body и запоминаем позицию. */
+  let lockedScrollY = 0;
+  let lockCount = 0;
+
+  function lockScroll(on) {
+    if (on) {
+      if (lockCount++ > 0) return;
+      lockedScrollY = window.scrollY;
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${lockedScrollY}px`;
+      document.body.style.left = '0';
+      document.body.style.right = '0';
+      document.body.style.overflow = 'hidden';
+    } else {
+      if (lockCount === 0 || --lockCount > 0) return;
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.left = '';
+      document.body.style.right = '';
+      document.body.style.overflow = '';
+      window.scrollTo(0, lockedScrollY);
+    }
+  }
+
+  // Отправка цели в Метрику. Пока счётчик не задан — тихо ничего не делает.
+  function track(goal, params) {
+    try {
+      if (window.LA_METRIKA_ID && typeof window.ym === 'function') {
+        window.ym(window.LA_METRIKA_ID, 'reachGoal', goal, params || {});
+      }
+      if (typeof window.gtag === 'function') window.gtag('event', goal, params || {});
+    } catch (e) { /* аналитика не должна ломать сайт */ }
+  }
+
   /* ── 1. Кастомный курсор с плавным сглаживанием (Lerp) ──────────── */
   const cursorDot = document.getElementById('cursor-dot');
   const cursorRing = document.getElementById('cursor-ring');
@@ -100,17 +170,31 @@
     });
   }
 
-  /* ── 2. Hero Слайдер (Кинематографичный) ─────────────────── */
-  const SLIDES_DATA = [
-    { img: 'img/hotel-lobby/00.jpg', tag: 'Лобби и ресторан отеля · Алматы' },
-    { img: 'img/hotel-lobby/01.jpg', tag: 'Парадный атриум с колоннадой · Алматы' },
-    { img: 'img/hotel-lobby/02.jpg', tag: 'Ресторан высокой кухни · Казахстан' },
-    { img: 'img/hotel-lobby/03.jpg', tag: 'Лаундж-бар и винная зона · Алматы' },
-    { img: 'img/hotel-lobby/04.jpg', tag: 'Приватные залы отеля · Алматы' },
-    { img: 'img/hotel-lobby/06.jpg', tag: 'Панорамный атриум · Казахстан' }
-  ];
+  /* ── 2. Hero Слайдер (Кинематографичный) ───────────────────
+     Слайды описаны один раз — в разметке (data-key / data-tag).
+     Первый кадр отрисован сразу (это LCP), остальные подставляются
+     только когда до них доходит очередь: на первой загрузке
+     скачивается одна картинка вместо шести. */
 
   const heroSlides = $$('.hero-slide');
+  const SLIDES_DATA = heroSlides.map(el => ({
+    key: el.dataset.key,
+    tag: el.dataset.tag || ''
+  }));
+
+  function ensureSlideLoaded(i) {
+    const el = heroSlides[i];
+    if (!el || el.dataset.loaded === '1' || el.querySelector('img')) {
+      if (el) el.dataset.loaded = '1';
+      return;
+    }
+    el.dataset.loaded = '1';
+    el.innerHTML = picture(SLIDES_DATA[i].key, SLIDES_DATA[i].tag, {
+      className: 'hero-slide-bg',
+      sizes: '100vw',
+      eager: true
+    });
+  }
   const heroPagination = $('#hero-pagination');
   const heroCounter = $('#hero-counter');
   const heroSlideTag = $('#hero-slide-tag');
@@ -136,6 +220,10 @@
 
     currentSlide = index;
 
+    // текущий кадр — обязательно, следующий — заранее, чтобы переход был без рывка
+    ensureSlideLoaded(currentSlide);
+    ensureSlideLoaded((currentSlide + 1) % SLIDES_DATA.length);
+
     heroSlides.forEach((slide, i) => {
       slide.classList.toggle('active', i === currentSlide);
     });
@@ -151,7 +239,8 @@
     });
 
     if (heroCounter) {
-      heroCounter.innerHTML = `<span>0${currentSlide + 1}</span> / 0${SLIDES_DATA.length}`;
+      const pad = n => String(n).padStart(2, '0');
+      heroCounter.innerHTML = `<span>${pad(currentSlide + 1)}</span> / ${pad(SLIDES_DATA.length)}`;
     }
 
     if (heroSlideTag && SLIDES_DATA[currentSlide]) {
@@ -221,10 +310,13 @@
   const intCount = $('#int-count');
 
   function renderCard(o) {
+    const cover = picture(`${o.slug}/${o.shots[0]}`, `${o.title} — ${o.place}`, {
+      sizes: SIZES_CARD
+    });
     return `
       <article class="card" data-slug="${o.slug}">
         <div class="card-img">
-          <img src="img/${o.slug}/${o.shots[0]}_t.jpg" alt="${o.title}" loading="lazy" />
+          ${cover}
           ${o.status === 'Реализован' ? '<span class="card-badge-top">Реализован</span>' : ''}
         </div>
         <div class="card-caption">
@@ -277,17 +369,34 @@
     $('#lb-specs').innerHTML = Object.entries(o.facts)
       .map(([k, v]) => `<div class="spec-cell"><b>${k}</b><span>${v}</span></div>`).join('');
     $('#lb-gallery').innerHTML = o.shots
-      .map(s => `<img src="img/${o.slug}/${s}.jpg" alt="${o.title}" loading="lazy" />`).join('');
+      .map((s, i) => picture(`${o.slug}/${s}`, `${o.title} — кадр ${i + 1}`, {
+        sizes: SIZES_FULL,
+        eager: i === 0
+      })).join('');
 
+    lastFocused = document.activeElement;
     lightbox.classList.add('open');
-    document.body.style.overflow = 'hidden';
+    document.body.classList.add('lb-open');
+    lockScroll(true);
     lightbox.scrollTop = 0;
+    const closeBtn = $('#lb-x');
+    if (closeBtn) closeBtn.focus({ preventScroll: true });
+    track('project_open', { slug: o.slug, title: o.title });
   }
 
+  let lastFocused = null;
+
   function closeLightbox() {
-    if (!lightbox) return;
+    if (!lightbox || !lightbox.classList.contains('open')) return;
     lightbox.classList.remove('open');
-    document.body.style.overflow = '';
+    document.body.classList.remove('lb-open');
+    lockScroll(false);
+    // Возвращаем фокус на карточку, с которой открыли — иначе после
+    // закрытия фокус улетает в начало страницы.
+    if (lastFocused && typeof lastFocused.focus === 'function') {
+      lastFocused.focus({ preventScroll: true });
+    }
+    lastFocused = null;
   }
 
   document.addEventListener('click', e => {
@@ -302,9 +411,26 @@
       if (e.target === lightbox) closeLightbox();
     });
   }
-  const lbCta = $('#lb-cta');
-  if (lbCta) lbCta.addEventListener('click', closeLightbox);
+  [$('#lb-cta'), $('#lb-cta-m')].forEach(btn => {
+    if (btn) btn.addEventListener('click', closeLightbox);
+  });
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
+
+  /* Свайп вниз закрывает проект — привычный жест для полноэкранных
+     галерей. Срабатывает только у верхней кромки, иначе жест конфликтует
+     с обычной прокруткой списка кадров. */
+  if (lightbox) {
+    let swipeStartY = 0;
+    let swipeArmed = false;
+    lightbox.addEventListener('touchstart', e => {
+      swipeStartY = e.changedTouches[0].clientY;
+      swipeArmed = lightbox.scrollTop <= 4;
+    }, { passive: true });
+    lightbox.addEventListener('touchend', e => {
+      if (!swipeArmed) return;
+      if (e.changedTouches[0].clientY - swipeStartY > 90) closeLightbox();
+    }, { passive: true });
+  }
 
   /* ── 5. Секция «Как рождается дом» ───────────────────────── */
   const STAGES = [
@@ -339,9 +465,14 @@
 
     clearTimeout(stageTimer);
     if (i === 2) {
-      try {
-        if (stVideo) { stVideo.currentTime = 0; stVideo.play(); }
-      } catch (e) { }
+      // play() возвращает промис: если стадия успеет смениться раньше,
+      // он отклоняется с AbortError. На мобильных автовоспроизведение
+      // к тому же может быть запрещено — глушим обе ситуации.
+      if (stVideo) {
+        try { stVideo.currentTime = 0; } catch (e) { }
+        const p = stVideo.play();
+        if (p && typeof p.catch === 'function') p.catch(() => { });
+      }
       stageTimer = setTimeout(() => nextStage(), 16000);
     } else {
       try { if (stVideo) stVideo.pause(); } catch (e) { }
@@ -394,23 +525,37 @@
   /* ── 6. Меню ─────────────────────────────────────────────── */
   const mmenu = $('#mmenu');
   const burger = $('#burger');
+
+  function setMenu(open) {
+    if (!mmenu || !burger) return;
+    mmenu.classList.toggle('open', open);
+    burger.classList.toggle('open', open);
+    burger.setAttribute('aria-expanded', open ? 'true' : 'false');
+    document.body.classList.toggle('menu-open', open);
+    lockScroll(open);
+  }
+
   if (burger && mmenu) {
-    burger.addEventListener('click', () => {
-      const isOpen = mmenu.classList.toggle('open');
-      burger.classList.toggle('open', isOpen);
+    burger.setAttribute('aria-expanded', 'false');
+    burger.setAttribute('aria-controls', 'mmenu');
+    burger.addEventListener('click', () => setMenu(!mmenu.classList.contains('open')));
+    // Клик по любой ссылке или кнопке внутри меню — закрываем
+    mmenu.addEventListener('click', e => {
+      if (e.target.closest('a')) setMenu(false);
     });
-    $$('#mmenu a').forEach(a => a.addEventListener('click', () => {
-      mmenu.classList.remove('open');
-      burger.classList.remove('open');
-    }));
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && mmenu.classList.contains('open')) setMenu(false);
+    });
   }
 
   /* ── 7. Скролл шапки ─────────────────────────────────────── */
   const nav = $('#nav');
   const totop = $('#totop');
+  const mobileCta = $('#mobile-cta');
   let lastScrollY = 0;
+  let scrollTicking = false;
 
-  window.addEventListener('scroll', () => {
+  function onScroll() {
     const y = window.scrollY;
     if (nav) {
       nav.classList.toggle('scrolled', y > 50);
@@ -419,8 +564,22 @@
     if (totop) {
       totop.classList.toggle('on', y > 600);
     }
+    // Панель действий появляется, как только hero уехал вверх
+    if (mobileCta) {
+      mobileCta.classList.toggle('on', y > window.innerHeight * 0.7);
+    }
     lastScrollY = y;
+    scrollTicking = false;
+  }
+
+  // Обработчик привязан к кадру отрисовки: на длинной странице это
+  // заметно экономит батарею на смартфоне.
+  window.addEventListener('scroll', () => {
+    if (scrollTicking) return;
+    scrollTicking = true;
+    requestAnimationFrame(onScroll);
   }, { passive: true });
+  onScroll();
 
   if (totop) {
     totop.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
@@ -511,6 +670,7 @@
         });
 
         if (response.ok) {
+          track('form_submit', { direction: dir, type: type });
           if (fOk) {
             fOk.style.display = 'block';
             fOk.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -533,6 +693,22 @@
       }
     });
   }
+
+  /* ── 9б. Цели на контактные клики ─────────────────────────
+     Один делегированный обработчик на документ: работает и для ссылок,
+     которые появляются позже (карточки, лайтбокс). */
+  document.addEventListener('click', e => {
+    const a = e.target.closest('a[href]');
+    if (!a) return;
+    const href = a.getAttribute('href') || '';
+    if (href.includes('wa.me') || href.includes('whatsapp')) {
+      track('whatsapp_click', { place: a.id || a.className || 'link' });
+    } else if (href.startsWith('tel:')) {
+      track('phone_click');
+    } else if (href.startsWith('mailto:')) {
+      track('email_click');
+    }
+  });
 
   /* ── 10. Переключение темы (Светлая / Тёмная) ──────────── */
   const themeToggle = $('#theme-toggle');
