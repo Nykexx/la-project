@@ -1,0 +1,17 @@
+{
+  "name": "LA Project — Архитектурное бюро",
+  "short_name": "LA Project",
+  "description": "Архитектурное проектирование жилых резиденций и дизайн интерьеров премиум-класса в Алматы.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#07080a",
+  "theme_color": "#07080a",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 38 35'%3E%3Cpath fill='%23d4b68e' d='M1,0 L4.6,0 L14.2,9.9 L17.6,14.3 L24.2,1.9 L25.8,1.9 L37.8,22.4 L35.6,26.9 L33.2,26.9 L22.2,22.5 L19.7,26.9 L19.7,28.6 L16.6,34.7 L13.2,34.7 L0,28.4 L0,0.9 Z'/%3E%3C/svg%3E",
+      "type": "image/svg+xml",
+      "sizes": "any"
+    }
+  ]
+}

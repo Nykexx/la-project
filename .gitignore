@@ -6,3 +6,5 @@ extracted_rar/
 # Исходники в максимальном разрешении — не деплоятся, хранятся локально
 _unused-img/
 img/_manifest.json
+__pycache__/
+*.pyc

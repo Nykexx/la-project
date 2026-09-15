@@ -5,11 +5,58 @@
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => [...(r || document).querySelectorAll(s)];
 
-  /* ── 0. Изображения: srcset и цели аналитики ─────────────────────
-     IMG_SIZES (img-sizes.js) хранит для каждого кадра исходные размеры
-     и список готовых ширин. Из него собираем srcset, чтобы браузер сам
-     выбрал нужный файл, и width/height — чтобы вёрстка не прыгала. */
+  /* ── 0. Мультиязычность (RU / KZ / EN) ─────────────────────────── */
+  let currentLang = localStorage.getItem('la_lang') || 'ru';
+  if (!['ru', 'kz', 'en'].includes(currentLang)) currentLang = 'ru';
 
+  function setLanguage(lang) {
+    if (typeof I18N === 'undefined' || !I18N[lang]) return;
+    currentLang = lang;
+    localStorage.setItem('la_lang', lang);
+    document.documentElement.lang = (lang === 'kz') ? 'kk' : lang;
+
+    // Обновляем активные кнопки в десктопном и мобильном переключателях
+    $$('.lang-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.lang === lang);
+    });
+
+    const dict = I18N[lang];
+
+    // Обновляем все элементы с атрибутом data-i18n
+    $$('[data-i18n]').forEach(el => {
+      const key = el.dataset.i18n;
+      if (dict[key]) {
+        el.textContent = dict[key];
+      }
+    });
+
+    // Обновляем плейсхолдеры
+    $$('[data-i18n-ph]').forEach(el => {
+      const key = el.dataset.i18nPh;
+      if (dict[key]) {
+        el.placeholder = dict[key];
+      }
+    });
+
+    // Перерисовываем карточки проектов с новыми строками статусов и счетчиков
+    renderAllProjects();
+
+    // Обновляем расчет в квизе, если открыт экран результатов
+    updateQuizCalculation();
+
+    // Обновляем WhatsApp ссылку в форме
+    updateWaLink();
+  }
+
+  // Навешиваем слушатели на кнопки переключения языка
+  document.addEventListener('click', e => {
+    const btn = e.target.closest('.lang-btn');
+    if (btn && btn.dataset.lang) {
+      setLanguage(btn.dataset.lang);
+    }
+  });
+
+  /* ── 0б. Изображения: srcset и цели аналитики ──────────────────── */
   function imgSrcset(key) {
     const meta = (typeof IMG_SIZES !== 'undefined') ? IMG_SIZES[key] : null;
     if (!meta) return null;
@@ -20,7 +67,6 @@
       .join(', ');
   }
 
-  // sizes — ширина, которую картинка реально занимает на экране.
   const SIZES_CARD = '(max-width: 700px) 92vw, (max-width: 1200px) 46vw, 30vw';
   const SIZES_FULL = '(max-width: 1400px) 100vw, 1304px';
 
@@ -31,7 +77,8 @@
     const dims = meta ? ` width="${meta[0]}" height="${meta[1]}"` : '';
     const cls = opts.className ? ` class="${opts.className}"` : '';
     const loading = opts.eager ? '' : ' loading="lazy"';
-    const img = `<img src="img/${key}.jpg" alt="${alt}"${dims}${loading} decoding="async" />`;
+    const dataFull = opts.dataFull ? ` data-full="img/${key}.webp"` : '';
+    const img = `<img src="img/${key}.jpg" alt="${alt}"${dims}${loading}${dataFull} decoding="async" />`;
     if (!srcset) return img;
     return `<picture${cls}>` +
       `<source type="image/webp" sizes="${opts.sizes || SIZES_CARD}" srcset="${srcset}" />` +
@@ -39,9 +86,7 @@
       `</picture>`;
   }
 
-  /* Блокировка прокрутки фона под меню и лайтбоксом.
-     На iOS одного `overflow: hidden` недостаточно — страница под модалкой
-     всё равно скроллится, поэтому фиксируем body и запоминаем позицию. */
+  /* Блокировка прокрутки фона под меню, лайтбоксом и зумом */
   let lockedScrollY = 0;
   let lockCount = 0;
 
@@ -65,14 +110,13 @@
     }
   }
 
-  // Отправка цели в Метрику. Пока счётчик не задан — тихо ничего не делает.
   function track(goal, params) {
     try {
       if (window.LA_METRIKA_ID && typeof window.ym === 'function') {
         window.ym(window.LA_METRIKA_ID, 'reachGoal', goal, params || {});
       }
       if (typeof window.gtag === 'function') window.gtag('event', goal, params || {});
-    } catch (e) { /* аналитика не должна ломать сайт */ }
+    } catch (e) { /* аналитика */ }
   }
 
   /* ── 1. Кастомный курсор с плавным сглаживанием (Lerp) ──────────── */
@@ -90,7 +134,6 @@
   let isTouchDevice = false;
 
   if (cursorDot && cursorRing) {
-    // Если пользователь на мобильном / тач-устройстве
     window.addEventListener('touchstart', function onTouch() {
       isTouchDevice = true;
       document.documentElement.classList.remove('has-custom-cursor');
@@ -98,10 +141,8 @@
       cursorRing.style.display = 'none';
     }, { passive: true, once: true });
 
-    // Отслеживание мыши
     window.addEventListener('mousemove', e => {
       if (isTouchDevice) return;
-
       mouseX = e.clientX;
       mouseY = e.clientY;
 
@@ -131,7 +172,6 @@
       cursorRing.style.opacity = '1';
     });
 
-    // Плавный цикл анимации курсора
     function renderCursor() {
       if (!isTouchDevice && isVisible) {
         ringX += (mouseX - ringX) * 0.18;
@@ -144,19 +184,20 @@
     }
     requestAnimationFrame(renderCursor);
 
-    // Реакция на наведение
     document.addEventListener('mouseover', e => {
       if (isTouchDevice) return;
 
-      const card = e.target.closest('.card, .st-track');
-      const interactive = e.target.closest('a, button, .hero-bullet, .hero-nav-btn, select, input, textarea, .lightbox-x, .svc-box, .adv-card, .theme-toggle');
+      const card = e.target.closest('.card, .st-track, .lightbox-gallery img');
+      const interactive = e.target.closest('a, button, .hero-bullet, .hero-nav-btn, select, input, textarea, .lightbox-x, .svc-box, .adv-card, .theme-toggle, .quiz-option-card, .lang-btn');
 
       if (card) {
         isCardHovering = true;
         isHovering = false;
         document.body.classList.add('cursor-card-hover');
         document.body.classList.remove('cursor-hover');
-        if (cursorLabel) cursorLabel.textContent = 'СМОТРЕТЬ';
+        if (cursorLabel) {
+          cursorLabel.textContent = (currentLang === 'en') ? 'VIEW' : (currentLang === 'kz' ? 'КӨРУ' : 'СМОТРЕТЬ');
+        }
       } else if (interactive) {
         isHovering = true;
         isCardHovering = false;
@@ -170,12 +211,7 @@
     });
   }
 
-  /* ── 2. Hero Слайдер (Кинематографичный) ───────────────────
-     Слайды описаны один раз — в разметке (data-key / data-tag).
-     Первый кадр отрисован сразу (это LCP), остальные подставляются
-     только когда до них доходит очередь: на первой загрузке
-     скачивается одна картинка вместо шести. */
-
+  /* ── 2. Hero Слайдер (Кинематографичный) ─────────────────── */
   const heroSlides = $$('.hero-slide');
   const SLIDES_DATA = heroSlides.map(el => ({
     key: el.dataset.key,
@@ -220,7 +256,6 @@
 
     currentSlide = index;
 
-    // текущий кадр — обязательно, следующий — заранее, чтобы переход был без рывка
     ensureSlideLoaded(currentSlide);
     ensureSlideLoaded((currentSlide + 1) % SLIDES_DATA.length);
 
@@ -280,7 +315,6 @@
   if (heroPrev) heroPrev.addEventListener('click', () => setSlide(currentSlide - 1));
   if (heroNext) heroNext.addEventListener('click', () => setSlide(currentSlide + 1));
 
-  // Сенсорные свайпы (Swipe) для слайдера на смартфонах
   const heroSlider = $('#top');
   if (heroSlider) {
     let touchStartX = 0;
@@ -294,8 +328,8 @@
       const diffX = e.changedTouches[0].screenX - touchStartX;
       const diffY = e.changedTouches[0].screenY - touchStartY;
       if (Math.abs(diffX) > 40 && Math.abs(diffX) > Math.abs(diffY)) {
-        if (diffX < 0) setSlide(currentSlide + 1); // свайп влево
-        else setSlide(currentSlide - 1);           // свайп вправо
+        if (diffX < 0) setSlide(currentSlide + 1);
+        else setSlide(currentSlide - 1);
       }
     }, { passive: true });
   }
@@ -303,7 +337,7 @@
   setSlide(0);
   startSlideTimer();
 
-  /* ── 3. Последовательная сетка (Подписи под фото) ───────── */
+  /* ── 3. Последовательная сетка карточек ─────────────────── */
   const archGrid = $('#arch-grid');
   const intGrid = $('#int-grid');
   const archCount = $('#arch-count');
@@ -313,17 +347,23 @@
     const cover = picture(`${o.slug}/${o.shots[0]}`, `${o.title} — ${o.place}`, {
       sizes: SIZES_CARD
     });
+    const statusText = (currentLang === 'en')
+      ? (o.status === 'Реализован' ? 'Completed' : 'Concept')
+      : (currentLang === 'kz' ? (o.status === 'Реализован' ? 'Жүзеге асырылды' : 'Жоба') : o.status);
+
+    const photosLabel = (currentLang === 'en') ? 'photos' : (currentLang === 'kz' ? 'фото' : 'фото');
+
     return `
       <article class="card" data-slug="${o.slug}">
         <div class="card-img">
           ${cover}
-          ${o.status === 'Реализован' ? '<span class="card-badge-top">Реализован</span>' : ''}
+          ${o.status === 'Реализован' ? `<span class="card-badge-top">${statusText}</span>` : ''}
         </div>
         <div class="card-caption">
           <h3 class="card-title">${o.title}</h3>
           <div class="card-meta">
             <span class="card-tag">${o.tag}</span>
-            <span>${o.place} · ${o.shots.length} фото</span>
+            <span>${o.place} · ${o.shots.length} ${photosLabel}</span>
           </div>
         </div>
       </article>
@@ -339,8 +379,16 @@
     if (archGrid) archGrid.innerHTML = archList.map(renderCard).join('');
     if (intGrid) intGrid.innerHTML = intList.map(renderCard).join('');
 
-    if (archCount) archCount.textContent = `${archList.length} ${plural(archList.length, 'объект', 'объекта', 'объектов')}`;
-    if (intCount) intCount.textContent = `${intList.length} ${plural(intList.length, 'объект', 'объекта', 'объектов')}`;
+    if (archCount) {
+      archCount.textContent = (currentLang === 'en')
+        ? `${archList.length} objects`
+        : (currentLang === 'kz' ? `${archList.length} нысан` : `${archList.length} ${plural(archList.length, 'объект', 'объекта', 'объектов')}`);
+    }
+    if (intCount) {
+      intCount.textContent = (currentLang === 'en')
+        ? `${intList.length} objects`
+        : (currentLang === 'kz' ? `${intList.length} нысан` : `${intList.length} ${plural(intList.length, 'объект', 'объекта', 'объектов')}`);
+    }
   }
 
   function plural(n, a, b, c) {
@@ -353,59 +401,149 @@
 
   renderAllProjects();
 
-  /* ── 4. Полноэкранный Лайтбокс Проекта ───────────────────── */
+  /* ── 4. Полноэкранный Лайтбокс Проекта (Фича 3 + Дебаг) ─── */
   const lightbox = $('#lightbox');
+  let currentProjectIndex = 0;
+  let lastFocused = null;
 
-  function openLightbox(slug) {
+  function openLightbox(slugOrIndex, updateHash) {
     if (typeof OBJECTS === 'undefined' || !lightbox) return;
-    const o = OBJECTS.find(x => x.slug === slug);
-    if (!o) return;
 
-    $('#lb-dir').textContent = o.cat === 'arch' ? 'Архитектурный проект' : 'Дизайн интерьера';
+    let index = -1;
+    if (typeof slugOrIndex === 'number') {
+      index = slugOrIndex;
+    } else {
+      index = OBJECTS.findIndex(x => x.slug === slugOrIndex);
+    }
+
+    if (index < 0 || index >= OBJECTS.length) return;
+    currentProjectIndex = index;
+    const o = OBJECTS[currentProjectIndex];
+
+    const dirLabel = o.cat === 'arch'
+      ? (currentLang === 'en' ? 'Architectural Project' : (currentLang === 'kz' ? 'Сәулеттік жоба' : 'Архитектурный проект'))
+      : (currentLang === 'en' ? 'Interior Design' : (currentLang === 'kz' ? 'Интерьер дизайны' : 'Дизайн интерьера'));
+
+    const statusText = (currentLang === 'en')
+      ? (o.status === 'Реализован' ? 'Completed' : 'Concept')
+      : (currentLang === 'kz' ? (o.status === 'Реализован' ? 'Жүзеге асырылды' : 'Жоба') : o.status);
+
+    const shotsText = (currentLang === 'en')
+      ? `${o.shots.length} shots`
+      : (currentLang === 'kz' ? `${o.shots.length} кадр` : `${o.shots.length} ${plural(o.shots.length, 'кадр', 'кадра', 'кадров')}`);
+
+    $('#lb-dir').textContent = dirLabel;
     $('#lb-tag').textContent = o.tag;
     $('#lb-title').textContent = o.title;
-    $('#lb-meta').textContent = `${o.place} · ${o.status} · ${o.shots.length} ${plural(o.shots.length, 'кадр', 'кадра', 'кадров')}`;
+    $('#lb-meta').textContent = `${o.place} · ${statusText} · ${shotsText}`;
     $('#lb-desc').textContent = o.desc;
+
     $('#lb-specs').innerHTML = Object.entries(o.facts)
       .map(([k, v]) => `<div class="spec-cell"><b>${k}</b><span>${v}</span></div>`).join('');
+
+    // Рендерим галерею с атрибутом data-full для зума
     $('#lb-gallery').innerHTML = o.shots
       .map((s, i) => picture(`${o.slug}/${s}`, `${o.title} — кадр ${i + 1}`, {
         sizes: SIZES_FULL,
-        eager: i === 0
+        eager: i === 0,
+        dataFull: true
       })).join('');
 
-    lastFocused = document.activeElement;
-    lightbox.classList.add('open');
-    document.body.classList.add('lb-open');
-    lockScroll(true);
+    if (updateHash !== false) {
+      try {
+        history.replaceState(null, '', `#project-${o.slug}`);
+      } catch (e) { }
+    }
+
+    if (!lightbox.classList.contains('open')) {
+      lastFocused = document.activeElement;
+      lightbox.classList.add('open');
+      document.body.classList.add('lb-open');
+      lockScroll(true);
+    }
     lightbox.scrollTop = 0;
+
     const closeBtn = $('#lb-x');
     if (closeBtn) closeBtn.focus({ preventScroll: true });
     track('project_open', { slug: o.slug, title: o.title });
   }
 
-  let lastFocused = null;
+  function openPrevProject() {
+    if (typeof OBJECTS === 'undefined' || !OBJECTS.length) return;
+    const prevIdx = (currentProjectIndex - 1 + OBJECTS.length) % OBJECTS.length;
+    openLightbox(prevIdx);
+  }
+
+  function openNextProject() {
+    if (typeof OBJECTS === 'undefined' || !OBJECTS.length) return;
+    const nextIdx = (currentProjectIndex + 1) % OBJECTS.length;
+    openLightbox(nextIdx);
+  }
 
   function closeLightbox() {
     if (!lightbox || !lightbox.classList.contains('open')) return;
     lightbox.classList.remove('open');
     document.body.classList.remove('lb-open');
     lockScroll(false);
-    // Возвращаем фокус на карточку, с которой открыли — иначе после
-    // закрытия фокус улетает в начало страницы.
+
+    try {
+      if (window.location.hash.startsWith('#project-')) {
+        history.replaceState(null, '', window.location.pathname + window.location.search);
+      }
+    } catch (e) { }
+
     if (lastFocused && typeof lastFocused.focus === 'function') {
       lastFocused.focus({ preventScroll: true });
     }
     lastFocused = null;
   }
 
+  // Клик по карточке проекта
   document.addEventListener('click', e => {
     const c = e.target.closest('.card');
     if (c && c.dataset.slug) openLightbox(c.dataset.slug);
   });
 
+  // Кнопки навигации внутри лайтбокса
+  const lbPrev = $('#lb-prev-proj');
+  const lbNext = $('#lb-next-proj');
+  const lbShare = $('#lb-share-btn');
   const lbX = $('#lb-x');
+
+  if (lbPrev) lbPrev.addEventListener('click', openPrevProject);
+  if (lbNext) lbNext.addEventListener('click', openNextProject);
   if (lbX) lbX.addEventListener('click', closeLightbox);
+
+  // Кнопка «Поделиться / Скопировать ссылку на проект»
+  function showToast(msg) {
+    const toast = $('#toast');
+    if (!toast) return;
+    if (msg) toast.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(() => {
+      toast.classList.remove('show');
+    }, 3000);
+  }
+
+  if (lbShare) {
+    lbShare.addEventListener('click', async () => {
+      const o = OBJECTS[currentProjectIndex];
+      if (!o) return;
+      const url = `${window.location.origin}${window.location.pathname}#project-${o.slug}`;
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(url);
+          const copyMsg = (typeof I18N !== 'undefined' && I18N[currentLang]) ? I18N[currentLang].lb_copied : '✓ Ссылка на проект скопирована!';
+          showToast(copyMsg);
+        } else {
+          prompt('Скопируйте ссылку на проект:', url);
+        }
+      } catch (err) {
+        prompt('Скопируйте ссылку на проект:', url);
+      }
+    });
+  }
+
   if (lightbox) {
     lightbox.addEventListener('click', e => {
       if (e.target === lightbox) closeLightbox();
@@ -414,11 +552,56 @@
   [$('#lb-cta'), $('#lb-cta-m')].forEach(btn => {
     if (btn) btn.addEventListener('click', closeLightbox);
   });
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
 
-  /* Свайп вниз закрывает проект — привычный жест для полноэкранных
-     галерей. Срабатывает только у верхней кромки, иначе жест конфликтует
-     с обычной прокруткой списка кадров. */
+  /* ── 4б. Полноэкранный Зум фото (Zoom Overlay) ─────────── */
+  const zoomOverlay = $('#zoom-overlay');
+  const zoomImg = $('#zoom-img');
+  const zoomClose = $('#zoom-close');
+
+  function openZoom(src) {
+    if (!zoomOverlay || !zoomImg || !src) return;
+    zoomImg.src = src;
+    zoomOverlay.classList.add('open');
+  }
+
+  function closeZoom() {
+    if (!zoomOverlay) return;
+    zoomOverlay.classList.remove('open');
+  }
+
+  if (zoomClose) zoomClose.addEventListener('click', closeZoom);
+  if (zoomOverlay) {
+    zoomOverlay.addEventListener('click', e => {
+      if (e.target === zoomOverlay || e.target === zoomImg) closeZoom();
+    });
+  }
+
+  // Клик по фото в лайтбоксе для открытия зума
+  document.addEventListener('click', e => {
+    const img = e.target.closest('#lb-gallery img');
+    if (img) {
+      const fullSrc = img.dataset.full || img.currentSrc || img.src;
+      openZoom(fullSrc);
+    }
+  });
+
+  // Клавиатурная навигация: Escape (закрыть зум / лайтбокс), ArrowLeft / ArrowRight
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      if (zoomOverlay && zoomOverlay.classList.contains('open')) {
+        closeZoom();
+      } else if (lightbox && lightbox.classList.contains('open')) {
+        closeLightbox();
+      } else if (lookbookModal && lookbookModal.classList.contains('open')) {
+        closeLookbook();
+      }
+    } else if (lightbox && lightbox.classList.contains('open') && (!zoomOverlay || !zoomOverlay.classList.contains('open'))) {
+      if (e.key === 'ArrowLeft') openPrevProject();
+      else if (e.key === 'ArrowRight') openNextProject();
+    }
+  });
+
+  // Сенсорный свайп закрытия лайтбокса
   if (lightbox) {
     let swipeStartY = 0;
     let swipeArmed = false;
@@ -432,7 +615,218 @@
     }, { passive: true });
   }
 
-  /* ── 5. Секция «Как рождается дом» ───────────────────────── */
+  // Deep linking: открытие проекта по хэшу URL (#project-slug или #slug)
+  function checkUrlHash() {
+    const hash = window.location.hash;
+    if (!hash || hash.length < 2) return;
+    const clean = hash.replace(/^#project-/, '').replace(/^#/, '');
+    if (typeof OBJECTS !== 'undefined') {
+      const match = OBJECTS.find(x => x.slug === clean);
+      if (match) {
+        setTimeout(() => openLightbox(match.slug, false), 150);
+      }
+    }
+  }
+  window.addEventListener('popstate', checkUrlHash);
+  checkUrlHash();
+
+  /* ── 5. Интерактивный Квиз / Конфигуратор (Фича 4) ──────── */
+  const quizStepSegments = $$('.quiz-progress-seg');
+  const quizSteps = $$('.quiz-step');
+  const quizStepIndicator = $('#quiz-step-indicator');
+  const quizStepName = $('#quiz-step-name');
+  const quizPrevBtn = $('#quiz-prev-btn');
+  const quizNextBtn = $('#quiz-next-btn');
+  const quizSummaryText = $('#quiz-summary-text');
+  const quizWaBtn = $('#quiz-wa-btn');
+  const quizFillFormBtn = $('#quiz-fill-form-btn');
+
+  let curQuizStep = 0;
+  const quizState = {
+    type: 'Загородный дом / Резиденция',
+    area: '200 – 500 м²',
+    scope: 'Полный рабочий проект под ключ',
+    location: 'Алматы / Город'
+  };
+
+  const STEP_NAMES = {
+    ru: ['Тип объекта', 'Площадь', 'Состав проекта', 'Локация и сроки', 'Результат расчета'],
+    kz: ['Нысан түрі', 'Аумағы', 'Жоба құрамы', 'Орналасуы', 'Есептеу нәтижесі'],
+    en: ['Property Type', 'Floor Area', 'Project Scope', 'Location', 'Estimate Result']
+  };
+
+  // Выбор опции в карточках квиза
+  document.addEventListener('click', e => {
+    const opt = e.target.closest('.quiz-option-card');
+    if (opt && opt.dataset.field) {
+      const field = opt.dataset.field;
+      const val = opt.dataset.val;
+      quizState[field] = val;
+
+      const parentGrid = opt.closest('.quiz-options-grid');
+      if (parentGrid) {
+        $$('.quiz-option-card', parentGrid).forEach(c => c.classList.remove('selected'));
+      }
+      opt.classList.add('selected');
+    }
+  });
+
+  function updateQuizCalculation() {
+    if (!quizSummaryText || !quizWaBtn) return;
+
+    let timeline = '2.5 – 4 месяца';
+    if (quizState.area.includes('1 000') || quizState.area.includes('более')) timeline = '4 – 6 месяцев';
+    else if (quizState.area.includes('до 200')) timeline = '1.5 – 2.5 месяца';
+
+    const langNames = STEP_NAMES[currentLang] || STEP_NAMES.ru;
+    if (quizStepName && langNames[curQuizStep]) {
+      quizStepName.textContent = langNames[curQuizStep];
+    }
+
+    if (quizStepIndicator) {
+      const stepWord = (currentLang === 'en') ? 'Step' : (currentLang === 'kz' ? 'Қадам' : 'Шаг');
+      const ofWord = (currentLang === 'en') ? 'of' : (currentLang === 'kz' ? '/' : 'из');
+      quizStepIndicator.innerHTML = `${stepWord} ${Math.min(4, curQuizStep + 1)} ${ofWord} 4`;
+    }
+
+    if (currentLang === 'en') {
+      quizSummaryText.innerHTML = `
+        <div><b>Property:</b> ${quizState.type}</div>
+        <div><b>Approximate Area:</b> ${quizState.area}</div>
+        <div><b>Selected Scope:</b> ${quizState.scope}</div>
+        <div><b>Location:</b> ${quizState.location}</div>
+        <div style="margin-top: 10px; color: var(--accent); font-weight: 600;"><b>Estimated Timeframe:</b> ~${timeline}</div>
+      `;
+    } else if (currentLang === 'kz') {
+      quizSummaryText.innerHTML = `
+        <div><b>Нысан:</b> ${quizState.type}</div>
+        <div><b>Болжамды аумағы:</b> ${quizState.area}</div>
+        <div><b>Жоба құрамы:</b> ${quizState.scope}</div>
+        <div><b>Орналасуы:</b> ${quizState.location}</div>
+        <div style="margin-top: 10px; color: var(--accent); font-weight: 600;"><b>Жобалау мерзімі:</b> ~${timeline}</div>
+      `;
+    } else {
+      quizSummaryText.innerHTML = `
+        <div><b>Объект:</b> ${quizState.type}</div>
+        <div><b>Площадь:</b> ${quizState.area}</div>
+        <div><b>Состав работ:</b> ${quizState.scope}</div>
+        <div><b>Локация:</b> ${quizState.location}</div>
+        <div style="margin-top: 10px; color: var(--accent); font-weight: 600;"><b>Ориентировочный срок:</b> ~${timeline}</div>
+      `;
+    }
+
+    // Формируем WhatsApp текст
+    const waText = `Здравствуйте! Рассчитал проект в онлайн-конфигураторе LA Project:\n• Объект: ${quizState.type}\n• Площадь: ${quizState.area}\n• Состав: ${quizState.scope}\n• Локация: ${quizState.location}\nХочу получить консультацию ведущего архитектора.`;
+    quizWaBtn.href = `https://wa.me/77017864680?text=${encodeURIComponent(waText)}`;
+  }
+
+  function showQuizStep(step) {
+    curQuizStep = step;
+
+    quizSteps.forEach((el, idx) => {
+      el.style.display = (idx === step) ? 'block' : 'none';
+    });
+
+    quizStepSegments.forEach((seg, idx) => {
+      seg.classList.toggle('active', idx <= Math.min(3, step));
+    });
+
+    if (quizPrevBtn) {
+      quizPrevBtn.style.visibility = (step === 0 || step === 4) ? 'hidden' : 'visible';
+    }
+
+    if (quizNextBtn) {
+      if (step >= 3) {
+        quizNextBtn.style.display = 'none';
+      } else {
+        quizNextBtn.style.display = 'inline-flex';
+        quizNextBtn.textContent = (currentLang === 'en') ? 'Next →' : (currentLang === 'kz' ? 'Келесі →' : 'Далее →');
+      }
+    }
+
+    if (step === 3) {
+      // На 3 шаге кнопка "Сформировать расчет"
+      if (quizNextBtn) {
+        quizNextBtn.style.display = 'inline-flex';
+        quizNextBtn.textContent = (currentLang === 'en') ? 'Calculate Estimate ⚡' : (currentLang === 'kz' ? 'Есептеуді алу ⚡' : 'Сформировать расчет ⚡');
+      }
+    }
+
+    if (step === 4) {
+      updateQuizCalculation();
+    } else {
+      const langNames = STEP_NAMES[currentLang] || STEP_NAMES.ru;
+      if (quizStepName && langNames[step]) {
+        quizStepName.textContent = langNames[step];
+      }
+      if (quizStepIndicator) {
+        const stepWord = (currentLang === 'en') ? 'Step' : (currentLang === 'kz' ? 'Қадам' : 'Шаг');
+        const ofWord = (currentLang === 'en') ? 'of' : (currentLang === 'kz' ? '/' : 'из');
+        quizStepIndicator.innerHTML = `${stepWord} ${step + 1} ${ofWord} 4`;
+      }
+    }
+  }
+
+  if (quizNextBtn) {
+    quizNextBtn.addEventListener('click', () => {
+      if (curQuizStep < 4) {
+        showQuizStep(curQuizStep + 1);
+      }
+    });
+  }
+
+  if (quizPrevBtn) {
+    quizPrevBtn.addEventListener('click', () => {
+      if (curQuizStep > 0) {
+        showQuizStep(curQuizStep - 1);
+      }
+    });
+  }
+
+  if (quizFillFormBtn) {
+    quizFillFormBtn.addEventListener('click', () => {
+      const fDir = $('#f-dir');
+      const fType = $('#f-type');
+      const fMsg = $('#f-msg');
+
+      if (fDir) fDir.value = quizState.scope.includes('Дизайн') ? 'Дизайн интерьера' : 'Архитектурное проектирование';
+      if (fType) fType.value = quizState.type.includes('Квартира') ? 'Апартаменты / Квартира' : 'Загородный дом / Резиденция';
+      if (fMsg) fMsg.value = `Площадь: ${quizState.area}, Локация: ${quizState.location}, Пакет: ${quizState.scope}`;
+      updateWaLink();
+    });
+  }
+
+  showQuizStep(0);
+
+  /* ── 6. Модальное окно Lookbook (Фича 5) ─────────────────── */
+  const lookbookModal = $('#lookbook-modal');
+  const lookbookClose = $('#lookbook-close');
+  const openLookbookBtns = [$('#open-lookbook-btn'), $('#open-lookbook-btn-m')];
+
+  function openLookbook() {
+    if (!lookbookModal) return;
+    lookbookModal.classList.add('open');
+    lockScroll(true);
+  }
+
+  function closeLookbook() {
+    if (!lookbookModal) return;
+    lookbookModal.classList.remove('open');
+    lockScroll(false);
+  }
+
+  openLookbookBtns.forEach(btn => {
+    if (btn) btn.addEventListener('click', openLookbook);
+  });
+
+  if (lookbookClose) lookbookClose.addEventListener('click', closeLookbook);
+  if (lookbookModal) {
+    lookbookModal.addEventListener('click', e => {
+      if (e.target === lookbookModal) closeLookbook();
+    });
+  }
+
+  /* ── 7. Секция «Как строится дом» ───────────────────────── */
   const STAGES = [
     { n: 'Стадия 01', t: 'Оригинальный фасадный чертёж', d: 'Проектная документация: раскладка камня, высотные отметки, конструктивные узлы и сейсмический расчёт.', hold: 3400, light: true },
     { n: 'Стадия 02', t: '3D-визуализация', d: 'Моделирование световых сценариев, текстур камня и ландшафта до начала стройки.', hold: 3600 },
@@ -465,9 +859,6 @@
 
     clearTimeout(stageTimer);
     if (i === 2) {
-      // play() возвращает промис: если стадия успеет смениться раньше,
-      // он отклоняется с AbortError. На мобильных автовоспроизведение
-      // к тому же может быть запрещено — глушим обе ситуации.
       if (stVideo) {
         try { stVideo.currentTime = 0; } catch (e) { }
         const p = stVideo.play();
@@ -482,7 +873,6 @@
 
   function nextStage() { showStage((curStage + 1) % STAGES.length); }
 
-  // Интерактивные клики по табам этапов и прогресс-бару
   navTabs.forEach(tab => {
     tab.addEventListener('click', () => {
       const idx = +tab.dataset.i;
@@ -522,7 +912,7 @@
     stObserver.observe(stTrack);
   }
 
-  /* ── 6. Меню ─────────────────────────────────────────────── */
+  /* ── 8. Меню ─────────────────────────────────────────────── */
   const mmenu = $('#mmenu');
   const burger = $('#burger');
 
@@ -539,7 +929,6 @@
     burger.setAttribute('aria-expanded', 'false');
     burger.setAttribute('aria-controls', 'mmenu');
     burger.addEventListener('click', () => setMenu(!mmenu.classList.contains('open')));
-    // Клик по любой ссылке или кнопке внутри меню — закрываем
     mmenu.addEventListener('click', e => {
       if (e.target.closest('a')) setMenu(false);
     });
@@ -548,7 +937,7 @@
     });
   }
 
-  /* ── 7. Скролл шапки ─────────────────────────────────────── */
+  /* ── 9. Скролл шапки ─────────────────────────────────────── */
   const nav = $('#nav');
   const totop = $('#totop');
   const mobileCta = $('#mobile-cta');
@@ -564,7 +953,6 @@
     if (totop) {
       totop.classList.toggle('on', y > 600);
     }
-    // Панель действий появляется, как только hero уехал вверх
     if (mobileCta) {
       mobileCta.classList.toggle('on', y > window.innerHeight * 0.7);
     }
@@ -572,8 +960,6 @@
     scrollTicking = false;
   }
 
-  // Обработчик привязан к кадру отрисовки: на длинной странице это
-  // заметно экономит батарею на смартфоне.
   window.addEventListener('scroll', () => {
     if (scrollTicking) return;
     scrollTicking = true;
@@ -585,7 +971,7 @@
     totop.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
   }
 
-  /* ── 8. Reveal блоков ────────────────────────────────────── */
+  /* ── 10. Reveal блоков ────────────────────────────────────── */
   const revObserver = new IntersectionObserver(entries => {
     entries.forEach(entry => {
       if (entry.isIntersecting) {
@@ -596,7 +982,7 @@
   }, { threshold: 0.08 });
   $$('.reveal').forEach(el => revObserver.observe(el));
 
-  /* ── 9. Реальная отправка формы заявки ────────────────────── */
+  /* ── 11. Отправка формы заявки ────────────────────────────── */
   const fSend = $('#f-send');
   const fWaDirect = $('#f-wa-direct');
   const fName = $('#f-name');
@@ -608,7 +994,7 @@
 
   function updateWaLink() {
     if (!fWaDirect) return;
-    const name = (fName ? fName.value.trim() : '') || 'Клиент';
+    const name = (fName ? fName.value.trim() : '') || (currentLang === 'en' ? 'Client' : 'Клиент');
     const contact = fContact ? fContact.value.trim() : '';
     const dir = fDir ? fDir.value : 'Архитектурное проектирование';
     const type = fType ? fType.value : 'Загородный дом';
@@ -635,7 +1021,10 @@
       const contact = fContact ? fContact.value.trim() : '';
 
       if (!name || !contact) {
-        alert('Пожалуйста, укажите ваше имя и контактный телефон (или WhatsApp).');
+        const alertMsg = (currentLang === 'en')
+          ? 'Please provide your name and phone / WhatsApp contact.'
+          : (currentLang === 'kz' ? 'Аты-жөніңізді және байланыс телефоныңызды көрсетіңіз.' : 'Пожалуйста, укажите ваше имя и контактный телефон (или WhatsApp).');
+        alert(alertMsg);
         if (!name && fName) fName.focus();
         else if (!contact && fContact) fContact.focus();
         return;
@@ -646,7 +1035,7 @@
       const msg = fMsg ? fMsg.value.trim() : '';
 
       const originalText = fSend.textContent;
-      fSend.textContent = 'Отправка заявки в бюро...';
+      fSend.textContent = (currentLang === 'en') ? 'Sending inquiry...' : (currentLang === 'kz' ? 'Өтінім жіберілуде...' : 'Отправка заявки в бюро...');
       fSend.disabled = true;
 
       const payload = {
@@ -694,9 +1083,6 @@
     });
   }
 
-  /* ── 9б. Цели на контактные клики ─────────────────────────
-     Один делегированный обработчик на документ: работает и для ссылок,
-     которые появляются позже (карточки, лайтбокс). */
   document.addEventListener('click', e => {
     const a = e.target.closest('a[href]');
     if (!a) return;
@@ -710,7 +1096,7 @@
     }
   });
 
-  /* ── 10. Переключение темы (Светлая / Тёмная) ──────────── */
+  /* ── 12. Переключение темы (Светлая / Тёмная) ──────────── */
   const themeToggle = $('#theme-toggle');
   const themeToggleM = $('#theme-toggle-m');
 
@@ -729,4 +1115,7 @@
   if (themeToggle) themeToggle.addEventListener('click', toggleTheme);
   if (themeToggleM) themeToggleM.addEventListener('click', toggleTheme);
   initTheme();
+
+  // Инициализация языка при старте
+  setLanguage(currentLang);
 })();

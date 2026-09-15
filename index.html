@@ -40,6 +40,10 @@
       href="img/hotel-lobby/00.jpg"
       imagesrcset="img/hotel-lobby/00-640.webp 640w, img/hotel-lobby/00-1100.webp 1100w, img/hotel-lobby/00-1600.webp 1600w, img/hotel-lobby/00.webp 2200w"
       imagesizes="100vw" />
+<link rel="manifest" href="manifest.json" />
+<meta name="application-name" content="LA Project" />
+<meta name="apple-mobile-web-app-title" content="LA Project" />
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 38 35'%3E%3Cpath fill='%23d4b68e' d='M1,0 L4.6,0 L14.2,9.9 L17.6,14.3 L24.2,1.9 L25.8,1.9 L37.8,22.4 L35.6,26.9 L33.2,26.9 L22.2,22.5 L19.7,26.9 L19.7,28.6 L16.6,34.7 L13.2,34.7 L0,28.4 L0,0.9 Z'/%3E%3C/svg%3E" />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 38 35'%3E%3Cpath fill='%23d4b68e' d='M1,0 L4.6,0 L14.2,9.9 L17.6,14.3 L24.2,1.9 L25.8,1.9 L37.8,22.4 L35.6,26.9 L33.2,26.9 L22.2,22.5 L19.7,26.9 L19.7,28.6 L16.6,34.7 L13.2,34.7 L0,28.4 L0,0.9 Z'/%3E%3C/svg%3E" />
 <style>
 :root {
@@ -86,7 +90,7 @@ body.theme-light {
    и все существующие правила вида «.card-img img» продолжают работать.
    Исключение — .hero-slide-bg ниже: там picture сам является слоем. */
 picture { display: contents; }
-img { max-width: 100%; }
+img { max-width: 100%; height: auto; }
 html { scroll-behavior: smooth; background: var(--bg); color: var(--text); }
 body {
   font-family: 'Manrope', system-ui, -apple-system, sans-serif;
@@ -339,18 +343,295 @@ h1, h2, h3, .serif {
   color: var(--accent);
   background: var(--accent-glow);
   transform: translateY(-2px);
-}  box-shadow: 0 8px 24px rgba(212, 182, 142, 0.25);
+  box-shadow: 0 8px 24px rgba(212, 182, 142, 0.25);
 }
-.btn-line {
+
+/* ── Переключатель языков (RU / KZ / EN) ── */
+.lang-switcher {
+  display: flex;
+  align-items: center;
   border: 1px solid var(--border-light);
-  color: #fff;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgba(255, 255, 255, 0.03);
+  height: 38px;
+  padding: 2px;
+  gap: 2px;
 }
-.btn-line:hover {
-  border-color: var(--accent);
+.lang-btn {
+  padding: 0 10px;
+  height: 100%;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: var(--text-muted);
+  transition: all 0.25s ease;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 1px;
+}
+.lang-btn.active {
+  background: var(--accent);
+  color: #07080a;
+  font-weight: 700;
+}
+.lang-btn:hover:not(.active) {
+  color: #fff;
+}
+body.theme-light .lang-switcher {
+  border-color: rgba(0, 0, 0, 0.15);
+  background: rgba(0, 0, 0, 0.03);
+}
+body.theme-light .lang-btn { color: #5c626e; }
+body.theme-light .lang-btn:hover:not(.active) { color: #121417; }
+
+/* ── Всплывающее уведомление (Toast) ── */
+.toast {
+  position: fixed;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-100px);
+  background: var(--bg-card);
   color: var(--accent-light);
+  border: 1px solid var(--accent);
+  padding: 12px 28px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  z-index: 100000;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.6);
+  opacity: 0;
+  transition: all 0.4s var(--ease-cinematic);
+  pointer-events: none;
+}
+.toast.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+
+/* ── Полноэкранный зум чертежей и фото ── */
+.zoom-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 20000;
+  background: rgba(5, 6, 8, 0.98);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  display: none;
+  place-items: center;
+  cursor: zoom-out;
+  padding: 30px;
+}
+.zoom-overlay.open { display: grid; }
+.zoom-overlay img {
+  max-width: 95vw;
+  max-height: 92vh;
+  object-fit: contain;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.85);
+  border: 1px solid var(--border);
+}
+.zoom-close {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--border-light);
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-size: 20px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+.zoom-close:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ── Элементы управления в лайтбоксе ── */
+.lb-top-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.lb-nav-btn {
+  height: 38px;
+  padding: 0 16px;
+  border: 1px solid var(--border-light);
+  background: rgba(255, 255, 255, 0.03);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.3s var(--ease-cinematic);
+}
+.lb-nav-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-glow);
+}
+.lb-share-btn {
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--border-light);
+  background: rgba(255, 255, 255, 0.03);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  transition: all 0.3s;
+}
+.lb-share-btn svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.8; }
+.lb-share-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-glow); }
+
+/* ── Интерактивный квиз-конфигуратор ── */
+.quiz-section {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  padding: 64px 56px;
+  margin-top: 40px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+  position: relative;
+  overflow: hidden;
+}
+.quiz-header {
+  max-width: 760px;
+}
+.quiz-progress-bar {
+  display: flex;
+  gap: 8px;
+  margin: 32px 0 28px;
+}
+.quiz-progress-seg {
+  flex: 1;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.1);
+  transition: background 0.4s ease;
+}
+.quiz-progress-seg.active {
+  background: var(--accent);
+}
+.quiz-step-container {
+  min-height: 280px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.quiz-step-title {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: clamp(24px, 3.2vw, 36px);
+  color: #fff;
+  font-weight: 400;
+  margin-bottom: 24px;
+}
+.quiz-options-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+  margin-bottom: 32px;
+}
+.quiz-option-card {
+  padding: 24px 20px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  cursor: pointer;
+  transition: all 0.3s var(--ease-cinematic);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.quiz-option-card:hover {
+  border-color: var(--border-gold);
   transform: translateY(-2px);
 }
+.quiz-option-card.selected {
+  border-color: var(--accent);
+  background: var(--accent-glow);
+}
+.quiz-opt-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: #fff;
+}
+.quiz-opt-desc {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+.quiz-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+}
+.quiz-result-box {
+  padding: 36px 32px;
+  border: 1px solid var(--border-gold);
+  background: var(--accent-glow);
+  margin-top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.quiz-result-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 28px;
+  color: #fff;
+}
+.quiz-res-detail {
+  font-size: 14.5px;
+  color: var(--text);
+  line-height: 1.7;
+}
+
+/* ── Модальное окно Lookbook ── */
+.lookbook-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  background: rgba(5, 6, 8, 0.96);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  display: none;
+  place-items: center;
+  padding: 24px;
+}
+.lookbook-modal.open { display: grid; }
+.lookbook-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-gold);
+  max-width: 620px;
+  width: 100%;
+  padding: 48px 40px;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.8);
+  position: relative;
+  text-align: center;
+}
+.lookbook-card h3 {
+  font-size: clamp(28px, 4vw, 38px);
+  color: #fff;
+  margin-bottom: 14px;
+}
+.lookbook-card p {
+  color: var(--text-muted);
+  font-size: 14.5px;
+  line-height: 1.7;
+  margin-bottom: 28px;
+}
+.lookbook-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--border);
+  display: grid;
+  place-items: center;
+  color: #fff;
+  cursor: pointer;
+}
+.lookbook-close:hover { border-color: var(--accent); color: var(--accent); }
 
 /* ── Переключатель темы ── */
 .nav-actions-group {
@@ -1529,14 +1810,33 @@ body.theme-light .mmenu a {
 }
 .spec-cell span { font-size: 14px; color: #fff; }
 .lightbox-gallery {
-  display: grid;
-  gap: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
   margin-top: 36px;
+  align-items: center;
+}
+.lightbox-gallery picture {
+  display: flex;
+  justify-content: center;
+  width: 100%;
 }
 .lightbox-gallery img {
-  width: 100%;
+  width: auto;
+  max-width: 100%;
+  max-height: 85vh;
+  height: auto;
+  object-fit: contain;
+  margin: 0 auto;
   display: block;
   background: #0f1013;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border);
+  cursor: zoom-in;
+  transition: transform 0.3s ease, border-color 0.3s ease;
+}
+.lightbox-gallery img:hover {
+  border-color: var(--border-gold);
 }
 
 /* ── Плавное появление ── */
@@ -1810,14 +2110,18 @@ body.theme-light .mmenu a {
      весь набор кадров. */
   .lightbox-in { padding-bottom: calc(104px + env(safe-area-inset-bottom)); }
   .lightbox-top { padding-top: env(safe-area-inset-top); }
+  .lb-top-actions { gap: 6px; }
+  .lb-nav-btn { height: 36px; padding: 0 10px; font-size: 10px; }
+  .lb-share-btn { width: 36px; height: 36px; }
   .lightbox-x {
-    width: 44px;
-    height: 44px;
+    width: 36px;
+    height: 36px;
     display: grid;
     place-items: center;
     border: 1px solid var(--border-light);
     background: rgba(255, 255, 255, 0.06);
   }
+  .lightbox-gallery img { max-height: 72vh; }
   .lightbox-cta-bar {
     display: block;
     position: fixed;
@@ -1830,6 +2134,10 @@ body.theme-light .mmenu a {
   }
   .lightbox-cta-bar .btn { width: 100%; height: 52px; }
   .lightbox .lb-cta-inline { display: none; }
+
+  /* ── Квиз ── */
+  .quiz-section { padding: 36px 20px; }
+  .quiz-options-grid { grid-template-columns: 1fr; }
 
   /* ── Форма ───────────────────────────────────────────────────── */
   .brief-r { padding-bottom: 32px; }
@@ -1931,48 +2239,64 @@ body.menu-open .mobile-cta { transform: translateY(110%); }
       <span>LA PROJECT</span>
     </a>
     <nav class="nav-links">
-      <a href="#gallery">Галерея</a>
-      <a href="#services">Услуги</a>
-      <a href="#stages">Как строится дом</a>
-      <a href="#benefits">Что получает заказчик</a>
-      <a href="#about">О нас</a>
-      <a href="#brief">Контакты</a>
+      <a href="#gallery" data-i18n="nav_gallery">Галерея</a>
+      <a href="#services" data-i18n="nav_services">Услуги</a>
+      <a href="#stages" data-i18n="nav_stages">Как строится дом</a>
+      <a href="#benefits" data-i18n="nav_benefits">Преимущества</a>
+      <a href="#about" data-i18n="nav_about">О нас</a>
+      <a href="#brief" data-i18n="nav_contacts">Контакты</a>
     </nav>
     <div class="nav-actions-group">
+      <!-- Переключатель языка -->
+      <div class="lang-switcher" id="lang-switcher">
+        <button class="lang-btn active" data-lang="ru">RU</button>
+        <button class="lang-btn" data-lang="kz">KZ</button>
+        <button class="lang-btn" data-lang="en">EN</button>
+      </div>
+      <button class="btn btn-line btn-nav-lookbook" id="open-lookbook-btn" style="height: 38px; padding: 0 16px; font-size: 10.5px;" data-i18n="nav_lookbook">Lookbook</button>
       <button class="theme-toggle" id="theme-toggle" aria-label="Светлая / тёмная тема" title="Переключить тему">
         <svg class="icon-moon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
         <svg class="icon-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M18 12h2M4 12H2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
       </button>
-      <a href="#brief" class="btn btn-gold btn-nav">Обсудить проект</a>
+      <a href="#brief" class="btn btn-gold btn-nav" data-i18n="nav_discuss">Обсудить проект</a>
       <button class="burger" id="burger" aria-label="Меню"><span></span></button>
     </div>
   </div>
 </header>
 
 <div class="mmenu" id="mmenu">
-  <a href="#gallery">Галерея</a>
-  <a href="#services">Услуги</a>
-  <a href="#stages">Как строится дом</a>
-  <a href="#benefits">Что получает заказчик</a>
-  <a href="#about">О нас</a>
-  <a href="#brief">Контакты</a>
+  <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 16px; border-bottom: 1px solid var(--border);">
+    <div class="lang-switcher" id="lang-switcher-m">
+      <button class="lang-btn active" data-lang="ru">RU</button>
+      <button class="lang-btn" data-lang="kz">KZ</button>
+      <button class="lang-btn" data-lang="en">EN</button>
+    </div>
+    <button class="btn btn-line" id="theme-toggle-m" style="height: 38px; padding: 0 14px; font-size: 11px;" data-i18n="theme_toggle_label">
+      Сменить тему
+    </button>
+  </div>
+  <a href="#gallery" data-i18n="nav_gallery">Галерея</a>
+  <a href="#services" data-i18n="nav_services">Услуги</a>
+  <a href="#stages" data-i18n="nav_stages">Как строится дом</a>
+  <a href="#benefits" data-i18n="nav_benefits">Преимущества</a>
+  <a href="#about" data-i18n="nav_about">О нас</a>
+  <a href="#quiz" data-i18n="nav_quiz">Рассчитать проект ⚡</a>
+  <a href="#brief" data-i18n="nav_contacts">Контакты</a>
   <div class="mmenu-contacts">
+    <button class="btn btn-line mm-btn" id="open-lookbook-btn-m" style="height: 48px;" data-i18n="lookbook_title">
+      Каталог Lookbook 2026
+    </button>
     <a class="mm-phone" href="tel:+77017864680">+7 701 786 46 80</a>
     <a class="mm-mail" href="mailto:laproject.kz@gmail.com">laproject.kz@gmail.com</a>
     <a href="https://wa.me/77017864680" target="_blank" rel="noopener"
-       class="btn btn-gold mm-btn" style="height: 52px; margin-top: 14px;">
+       class="btn btn-gold mm-btn" style="height: 52px; margin-top: 14px;" data-i18n="f_btn_wa">
       Написать в WhatsApp ↗
     </a>
-    <button class="btn btn-line mm-btn" id="theme-toggle-m" style="height: 48px;">
-      Сменить тему
-    </button>
   </div>
 </div>
 
 <!-- ─── 1. ХИРО ───────────────────────────────────────── -->
 <section class="hero-slider" id="top">
-  <!-- Первый слайд отрисован в разметке — он и есть LCP, грузится сразу.
-       Остальные подставляются из data-key скриптом, когда до них доходит очередь. -->
   <div class="hero-slides" id="hero-slides">
     <div class="hero-slide active" data-index="0" data-key="hotel-lobby/00"
          data-tag="Лобби и ресторан отеля · Алматы">
@@ -1998,7 +2322,7 @@ body.menu-open .mobile-cta { transform: translateY(110%); }
   <div class="hero-overlay"></div>
 
   <div class="hero-content">
-    <div class="hero-eyebrow" id="hero-slide-tag">Лобби и ресторан отеля · Алматы</div>
+    <div class="hero-eyebrow" id="hero-slide-tag" data-i18n="hero_tag">Лобби и ресторан отеля · Алматы</div>
 
     <div class="hero-brand-heading">
       <svg viewBox="0 0 38 35" class="hero-main-logo" aria-hidden="true">
@@ -2009,14 +2333,15 @@ body.menu-open .mobile-cta { transform: translateY(110%); }
       <h1 class="hero-brand-name">LA PROJECT</h1>
     </div>
 
-    <p class="hero-slogan">
+    <p class="hero-slogan" data-i18n="hero_slogan">
       Создаём и реализуем архитектурные и интерьерные проекты — от архитектуры и дизайна до комплектации и строительства под ключ.
     </p>
 
     <div class="hero-bottom-bar">
       <div class="hero-actions">
-        <a href="#gallery" class="btn btn-gold">Смотреть проекты ↓</a>
-        <a href="#brief" class="btn btn-line">Обсудить ваш объект →</a>
+        <a href="#gallery" class="btn btn-gold" data-i18n="hero_btn_projects">Смотреть проекты ↓</a>
+        <a href="#quiz" class="btn btn-line" data-i18n="hero_btn_quiz">Рассчитать стоимость ⚡</a>
+        <a href="#brief" class="btn btn-line" data-i18n="hero_btn_discuss">Обсудить ваш объект →</a>
       </div>
 
       <div class="hero-controls">
@@ -2035,9 +2360,9 @@ body.menu-open .mobile-cta { transform: translateY(110%); }
   <section class="wrap" id="architecture">
     <div class="sec-head reveal">
       <div>
-        <div class="eyebrow">Направление 01</div>
-        <h2>Архитектурные проекты</h2>
-        <p class="sec-sub">
+        <div class="eyebrow" data-i18n="arch_dir">Направление 01</div>
+        <h2 data-i18n="arch_title">Архитектурные проекты</h2>
+        <p class="sec-sub" data-i18n="arch_sub">
           Частные виллы, горные резиденции и общественные здания. Проектирование по государственной лицензии.
         </p>
       </div>
@@ -2051,9 +2376,9 @@ body.menu-open .mobile-cta { transform: translateY(110%); }
   <section class="wrap" id="interiors" style="margin-top: 40px;">
     <div class="sec-head reveal">
       <div>
-        <div class="eyebrow">Направление 02</div>
-        <h2>Дизайн интерьеров</h2>
-        <p class="sec-sub">
+        <div class="eyebrow" data-i18n="int_dir">Направление 02</div>
+        <h2 data-i18n="int_title">Дизайн интерьеров</h2>
+        <p class="sec-sub" data-i18n="int_sub">
           Частные дома, апартаменты, рестораны и лобби отелей. Баланс тактильных материалов и выверенной эргономики.
         </p>
       </div>
@@ -2068,18 +2393,18 @@ body.menu-open .mobile-cta { transform: translateY(110%); }
 <section class="wrap" id="services" style="margin-top: 40px;">
   <div class="sec-head reveal">
     <div>
-      <div class="eyebrow">Компетенции</div>
-      <h2>Услуги студии</h2>
+      <div class="eyebrow" data-i18n="svc_eyebrow">Компетенции</div>
+      <h2 data-i18n="svc_title">Услуги студии</h2>
     </div>
-    <a href="#brief" class="sec-count">Обсудить задачу →</a>
+    <a href="#brief" class="sec-count" data-i18n="svc_discuss">Обсудить задачу →</a>
   </div>
 
   <div class="svc-minimal-grid reveal">
     <div class="svc-box">
       <div class="svc-box-top">
         <span class="svc-num">01</span>
-        <h3 class="svc-name">Концепт</h3>
-        <p class="svc-desc">
+        <h3 class="svc-name" data-i18n="svc_01_name">Концепт</h3>
+        <p class="svc-desc" data-i18n="svc_01_desc">
           Формируем идею и образ будущего пространства. Разрабатываем концепцию проекта, функциональное зонирование, планировочные решения и стилистическое направление. Определяем ключевые материалы, цветовую гамму и характер интерьера.
         </p>
       </div>
@@ -2094,8 +2419,8 @@ body.menu-open .mobile-cta { transform: translateY(110%); }
     <div class="svc-box">
       <div class="svc-box-top">
         <span class="svc-num">02</span>
-        <h3 class="svc-name">Архитектурные решения</h3>
-        <p class="svc-desc">
+        <h3 class="svc-name" data-i18n="svc_02_name">Архитектурные решения</h3>
+        <p class="svc-desc" data-i18n="svc_02_desc">
           Проектируем архитектуру, объединяя эстетику, функциональность и технические требования. Разрабатываем архитектурную концепцию и решения для дальнейшей реализации проекта.
         </p>
       </div>
@@ -2110,8 +2435,8 @@ body.menu-open .mobile-cta { transform: translateY(110%); }
     <div class="svc-box">
       <div class="svc-box-top">
         <span class="svc-num">03</span>
-        <h3 class="svc-name">Дизайн интерьеров</h3>
-        <p class="svc-desc">
+        <h3 class="svc-name" data-i18n="svc_03_name">Дизайн интерьеров</h3>
+        <p class="svc-desc" data-i18n="svc_03_desc">
           Создаём авторские жилые и общественные интерьеры с выверенной эргономикой, индивидуальными световыми сценариями и глубокой проработкой каждой плоскости.
         </p>
       </div>
@@ -2126,8 +2451,8 @@ body.menu-open .mobile-cta { transform: translateY(110%); }
     <div class="svc-box">
       <div class="svc-box-top">
         <span class="svc-num">04</span>
-        <h3 class="svc-name">Умный дом и инженерия</h3>
-        <p class="svc-desc">
+        <h3 class="svc-name" data-i18n="svc_04_name">Умный дом и инженерия</h3>
+        <p class="svc-desc" data-i18n="svc_04_desc">
           Создаём интеллектуальную среду, которая делает пространство комфортнее, безопаснее и эффективнее. Проектируем и интегрируем систему «Умный дом», объединяя управление климатом, освещением, безопасностью, мультимедиа и инженерными системами в единую экосистему.
         </p>
       </div>
@@ -2142,8 +2467,8 @@ body.menu-open .mobile-cta { transform: translateY(110%); }
     <div class="svc-box">
       <div class="svc-box-top">
         <span class="svc-num">05</span>
-        <h3 class="svc-name">Надзор и комплектация</h3>
-        <p class="svc-desc">
+        <h3 class="svc-name" data-i18n="svc_05_name">Надзор и комплектация</h3>
+        <p class="svc-desc" data-i18n="svc_05_desc">
           Контролируем реализацию проекта и берём на себя его комплектацию. Следим за соответствием работ проекту, качеством исполнения и соблюдением принятых решений.
         </p>
       </div>
@@ -2158,8 +2483,8 @@ body.menu-open .mobile-cta { transform: translateY(110%); }
     <div class="svc-box">
       <div class="svc-box-top">
         <span class="svc-num">06</span>
-        <h3 class="svc-name">Строительство под ключ</h3>
-        <p class="svc-desc">
+        <h3 class="svc-name" data-i18n="svc_06_name">Строительство под ключ</h3>
+        <p class="svc-desc" data-i18n="svc_06_desc">
           Реализуем проект полностью — от подготовки объекта до передачи готового пространства. Организуем строительные работы, координируем подрядчиков и отвечаем за результат на каждом этапе.
         </p>
       </div>
@@ -2177,9 +2502,9 @@ body.menu-open .mobile-cta { transform: translateY(110%); }
 <section class="wrap" id="stages" style="margin-top: 40px;">
   <div class="sec-head reveal">
     <div>
-      <div class="eyebrow">Один объект · четыре стадии</div>
-      <h2>Как строится дом</h2>
-      <p class="sec-sub">
+      <div class="eyebrow" data-i18n="stages_eyebrow">Один объект · четыре стадии</div>
+      <h2 data-i18n="stages_title">Как строится дом</h2>
+      <p class="sec-sub" data-i18n="stages_sub">
         Особняк в классическом стиле в Алматы: от оригинального фасадного чертежа до готового здания.
       </p>
     </div>
@@ -2215,31 +2540,174 @@ body.menu-open .mobile-cta { transform: translateY(110%); }
         <img src="img/stages/real.jpg" alt="Готовый особняк в Алматы" width="1500" height="1000" loading="lazy" decoding="async" />
       </picture>
     </div>
-    <div class="st-final" id="st-final"><button class="btn btn-gold" id="st-open">Открыть проект →</button></div>
+    <div class="st-final" id="st-final"><button class="btn btn-gold" id="st-open" data-i18n="st_open_btn">Открыть проект →</button></div>
     </div>
-    <!-- Подпись вынесена из .st-track: на десктопе она лежит поверх кадра,
-         на мобильном становится обычным блоком под ним. -->
     <div class="st-cap" id="st-cap"></div>
   </div>
   <div class="st-bar" id="st-bar">
     <i class="st-seg"></i><i class="st-seg"></i><i class="st-seg"></i><i class="st-seg"></i>
   </div>
   <div class="st-nav-tabs" id="st-nav-tabs">
-    <button class="st-nav-tab active" data-i="0"><b>01</b> Фасадный чертёж</button>
-    <button class="st-nav-tab" data-i="1"><b>02</b> 3D-визуализация</button>
-    <button class="st-nav-tab" data-i="2"><b>03</b> Строительство</button>
-    <button class="st-nav-tab" data-i="3"><b>04</b> Готовый особняк</button>
+    <button class="st-nav-tab active" data-i="0"><b>01</b> <span data-i18n="st_tab_0">Фасадный чертёж</span></button>
+    <button class="st-nav-tab" data-i="1"><b>02</b> <span data-i18n="st_tab_1">3D-визуализация</span></button>
+    <button class="st-nav-tab" data-i="2"><b>03</b> <span data-i18n="st_tab_2">Строительство</span></button>
+    <button class="st-nav-tab" data-i="3"><b>04</b> <span data-i18n="st_tab_3">Готовый особняк</span></button>
   </div>
 </section>
 
-<!-- ─── 5. ЧТО ПОЛУЧАЕТ ЗАКАЗЧИК ──────────────────────── -->
+<!-- ─── 5. ИНТЕРАКТИВНЫЙ КВИЗ-КОНФИГУРАТОР (ФИЧА 4) ───── -->
+<section class="wrap" id="quiz" style="margin-top: 40px;">
+  <div class="sec-head reveal">
+    <div>
+      <div class="eyebrow" data-i18n="quiz_badge">Интерактивный конфигуратор</div>
+      <h2 data-i18n="quiz_title">Рассчитайте параметры вашего проекта за 1 минуту</h2>
+      <p class="sec-sub" data-i18n="quiz_sub">
+        Ответьте на 4 вопроса, чтобы получить предварительное ТЗ, состав разделов и консультацию ведущего архитектора.
+      </p>
+    </div>
+  </div>
+
+  <div class="quiz-section reveal">
+    <div class="quiz-header">
+      <div class="quiz-progress-info" style="display: flex; justify-content: space-between; font-size: 12px; color: var(--accent); font-weight: 600; text-transform: uppercase; letter-spacing: 0.16em;">
+        <span id="quiz-step-indicator"><span data-i18n="quiz_step">Шаг</span> 1 <span data-i18n="quiz_of">из</span> 4</span>
+        <span id="quiz-step-name">Тип объекта</span>
+      </div>
+      <div class="quiz-progress-bar">
+        <div class="quiz-progress-seg active" data-q="0"></div>
+        <div class="quiz-progress-seg" data-q="1"></div>
+        <div class="quiz-progress-seg" data-q="2"></div>
+        <div class="quiz-progress-seg" data-q="3"></div>
+      </div>
+    </div>
+
+    <div class="quiz-step-container">
+      <!-- Шаг 1 -->
+      <div class="quiz-step" data-step="0">
+        <h3 class="quiz-step-title" data-i18n="quiz_step1_q">1. Выберите направление и тип объекта:</h3>
+        <div class="quiz-options-grid">
+          <div class="quiz-option-card selected" data-field="type" data-val="Загородный дом / Резиденция">
+            <div class="quiz-opt-name">Загородный дом / Резиденция</div>
+            <div class="quiz-opt-desc">Индивидуальный проект виллы, особняка или шале</div>
+          </div>
+          <div class="quiz-option-card" data-field="type" data-val="Апартаменты / Квартира">
+            <div class="quiz-opt-name">Апартаменты / Квартира</div>
+            <div class="quiz-opt-desc">Авторский дизайн интерьера премиум-класса</div>
+          </div>
+          <div class="quiz-option-card" data-field="type" data-val="HoReCa (Отель / Ресторан)">
+            <div class="quiz-opt-name">HoReCa (Отель / Ресторан)</div>
+            <div class="quiz-opt-desc">Коммерческий интерьер высокой проходимости</div>
+          </div>
+          <div class="quiz-option-card" data-field="type" data-val="Комплекс: Дом + Интерьер">
+            <div class="quiz-opt-name">Комплекс: Дом + Интерьер</div>
+            <div class="quiz-opt-desc">Генпроектирование, ландшафт и полный интерьер</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Шаг 2 -->
+      <div class="quiz-step" data-step="1" style="display: none;">
+        <h3 class="quiz-step-title" data-i18n="quiz_step2_q">2. Укажите ориентировочную площадь:</h3>
+        <div class="quiz-options-grid">
+          <div class="quiz-option-card" data-field="area" data-val="до 200 м²">
+            <div class="quiz-opt-name">до 200 м²</div>
+            <div class="quiz-opt-desc">Квартиры и компактные коттеджи</div>
+          </div>
+          <div class="quiz-option-card selected" data-field="area" data-val="200 – 500 м²">
+            <div class="quiz-opt-name">200 – 500 м²</div>
+            <div class="quiz-opt-desc">Семейные резиденции и просторные апартаменты</div>
+          </div>
+          <div class="quiz-option-card" data-field="area" data-val="500 – 1 000 м²">
+            <div class="quiz-opt-name">500 – 1 000 м²</div>
+            <div class="quiz-opt-desc">Масштабные виллы, усадьбы и спа-комплексы</div>
+          </div>
+          <div class="quiz-option-card" data-field="area" data-val="более 1 000 м²">
+            <div class="quiz-opt-name">более 1 000 м²</div>
+            <div class="quiz-opt-desc">Гранд-резиденции, отели и бизнес-центры</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Шаг 3 -->
+      <div class="quiz-step" data-step="2" style="display: none;">
+        <h3 class="quiz-step-title" data-i18n="quiz_step3_q">3. Необходимый состав проекта:</h3>
+        <div class="quiz-options-grid">
+          <div class="quiz-option-card selected" data-field="scope" data-val="Полный рабочий проект под ключ">
+            <div class="quiz-opt-name">Полный цикл под ключ</div>
+            <div class="quiz-opt-desc">Архитектура, 3D, рабочие чертежи, надзор и комплектация</div>
+          </div>
+          <div class="quiz-option-card" data-field="scope" data-val="Архитектурное проектирование (АР+КР)">
+            <div class="quiz-opt-name">Архитектурный проект (АР+КР)</div>
+            <div class="quiz-opt-desc">Фасады, планировки, конструкции и генплан</div>
+          </div>
+          <div class="quiz-option-card" data-field="scope" data-val="Дизайн интерьера + 3D">
+            <div class="quiz-opt-name">Дизайн интерьера + 3D</div>
+            <div class="quiz-opt-desc">Планировка, визуализации и ведомости материалов</div>
+          </div>
+          <div class="quiz-option-card" data-field="scope" data-val="Инженерия + Умный дом">
+            <div class="quiz-opt-name">Инженерия + Умный дом</div>
+            <div class="quiz-opt-desc">Климат, автоматизация, слаботочные системы</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Шаг 4 -->
+      <div class="quiz-step" data-step="3" style="display: none;">
+        <h3 class="quiz-step-title" data-i18n="quiz_step4_q">4. Локация и желаемые сроки:</h3>
+        <div class="quiz-options-grid">
+          <div class="quiz-option-card selected" data-field="location" data-val="Алматы / Город">
+            <div class="quiz-opt-name">г. Алматы</div>
+            <div class="quiz-opt-desc">В черте города (выезд на объект в день обращения)</div>
+          </div>
+          <div class="quiz-option-card" data-field="location" data-val="Алматинская область">
+            <div class="quiz-opt-name">Алматинская область</div>
+            <div class="quiz-opt-desc">Горные резиденции, предгорья и загородные участки</div>
+          </div>
+          <div class="quiz-option-card" data-field="location" data-val="Астана / Другие регионы Казахстана">
+            <div class="quiz-opt-name">Астана / Казахстан</div>
+            <div class="quiz-opt-desc">Дистанционное проектирование и авторский надзор</div>
+          </div>
+          <div class="quiz-option-card" data-field="location" data-val="Международный проект">
+            <div class="quiz-opt-name">Зарубежный объект</div>
+            <div class="quiz-opt-desc">Проектирование по международным стандартам</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Результат расчета -->
+      <div class="quiz-step" data-step="4" style="display: none;">
+        <div class="quiz-result-box">
+          <h3 class="quiz-result-title" data-i18n="quiz_res_title">Предварительные параметры проекта готовы</h3>
+          <div class="quiz-res-detail" id="quiz-summary-text">
+            <!-- Заполняется динамически -->
+          </div>
+          <div style="display: flex; gap: 14px; flex-wrap: wrap; margin-top: 12px;">
+            <a href="#" id="quiz-wa-btn" target="_blank" rel="noopener" class="btn btn-gold" style="height: 50px;" data-i18n="quiz_res_wa">
+              Получить детальный расчет в WhatsApp →
+            </a>
+            <a href="#brief" class="btn btn-line" id="quiz-fill-form-btn" style="height: 50px;" data-i18n="quiz_res_form">
+              Перенести данные в форму заявки ↓
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="quiz-actions" id="quiz-actions">
+      <button class="btn btn-line" id="quiz-prev-btn" style="visibility: hidden;" data-i18n="quiz_btn_prev">← Назад</button>
+      <button class="btn btn-gold" id="quiz-next-btn" data-i18n="quiz_btn_next">Далее →</button>
+    </div>
+  </div>
+</section>
+
+<!-- ─── 6. ЧТО ПОЛУЧАЕТ ЗАКАЗЧИК ──────────────────────── -->
 <section class="wrap" id="benefits" style="margin-top: 40px;">
   <div class="sec-head reveal">
     <div>
-      <div class="eyebrow">Преимущества сотрудничества</div>
-      <h2>Что получает заказчик</h2>
+      <div class="eyebrow" data-i18n="adv_eyebrow">Преимущества сотрудничества</div>
+      <h2 data-i18n="adv_title">Что получает заказчик</h2>
     </div>
-    <a href="#brief" class="sec-count">Обсудить проект →</a>
+    <a href="#brief" class="sec-count" data-i18n="adv_discuss">Обсудить проект →</a>
   </div>
 
   <div class="adv-grid reveal">
@@ -2250,8 +2718,8 @@ body.menu-open .mobile-cta { transform: translateY(110%); }
           <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M10 6.5h4M6.5 10v4M17.5 10v4M10 17.5h4"/></svg>
         </div>
       </div>
-      <h3 class="adv-title">Один ответственный за весь проект</h3>
-      <p class="adv-desc">
+      <h3 class="adv-title" data-i18n="adv_01_t">Один ответственный за весь проект</h3>
+      <p class="adv-desc" data-i18n="adv_01_d">
         Архитектура, интерьер, инженерия, комплектация и строительство объединены в единую систему. Вам не нужно координировать десятки специалистов и подрядчиков.
       </p>
     </div>
@@ -2263,8 +2731,8 @@ body.menu-open .mobile-cta { transform: translateY(110%); }
           <svg viewBox="0 0 24 24"><path d="M12 2v4M12 6l-6 16M12 6l6 16M8 15h8M12 9a2 2 0 100-4 2 2 0 000 4z"/></svg>
         </div>
       </div>
-      <h3 class="adv-title">Индивидуальное решение</h3>
-      <p class="adv-desc">
+      <h3 class="adv-title" data-i18n="adv_02_t">Индивидуальное решение</h3>
+      <p class="adv-desc" data-i18n="adv_02_d">
         Мы не работаем по шаблонам. Каждый проект создаётся под образ жизни, задачи, участок, бюджет и пожелания конкретного заказчика.
       </p>
     </div>
@@ -2276,8 +2744,8 @@ body.menu-open .mobile-cta { transform: translateY(110%); }
           <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M12 10v4M10 12h4"/></svg>
         </div>
       </div>
-      <h3 class="adv-title">Полный контроль реализации</h3>
-      <p class="adv-desc">
+      <h3 class="adv-title" data-i18n="adv_03_t">Полный контроль реализации</h3>
+      <p class="adv-desc" data-i18n="adv_03_d">
         От первой идеи до готового объекта все решения находятся под контролем одной команды. Это позволяет сохранить первоначальную концепцию и качество проекта.
       </p>
     </div>
@@ -2289,8 +2757,8 @@ body.menu-open .mobile-cta { transform: translateY(110%); }
           <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
         </div>
       </div>
-      <h3 class="adv-title">Экономия времени</h3>
-      <p class="adv-desc">
+      <h3 class="adv-title" data-i18n="adv_04_t">Экономия времени</h3>
+      <p class="adv-desc" data-i18n="adv_04_d">
         Мы берём на себя поиск специалистов, согласование решений, подбор материалов, закупки, логистику и взаимодействие с подрядчиками.
       </p>
     </div>
@@ -2302,8 +2770,8 @@ body.menu-open .mobile-cta { transform: translateY(110%); }
           <svg viewBox="0 0 24 24"><path d="M3 21h18M5 21V9l7-5 7 5v12M9 13h6M9 17h6"/></svg>
         </div>
       </div>
-      <h3 class="adv-title">Прозрачность бюджета</h3>
-      <p class="adv-desc">
+      <h3 class="adv-title" data-i18n="adv_05_t">Прозрачность бюджета</h3>
+      <p class="adv-desc" data-i18n="adv_05_d">
         Планируем расходы на всех этапах, помогаем оптимизировать решения и контролируем стоимость материалов, оборудования и работ.
       </p>
     </div>
@@ -2315,8 +2783,8 @@ body.menu-open .mobile-cta { transform: translateY(110%); }
           <svg viewBox="0 0 24 24"><path d="M6 3h12l4 6-10 12L2 9l4-6zM2 9h20M12 21L8.5 9 11 3M12 21l3.5-9L13 3"/></svg>
         </div>
       </div>
-      <h3 class="adv-title">Качество без компромиссов</h3>
-      <p class="adv-desc">
+      <h3 class="adv-title" data-i18n="adv_06_t">Качество без компромиссов</h3>
+      <p class="adv-desc" data-i18n="adv_06_d">
         Контролируем соответствие работ проекту, качество материалов и исполнения на каждом этапе — от архитектурных решений до финального декора.
       </p>
     </div>
@@ -2328,8 +2796,8 @@ body.menu-open .mobile-cta { transform: translateY(110%); }
           <svg viewBox="0 0 24 24"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9M12 7v2"/></svg>
         </div>
       </div>
-      <h3 class="adv-title">Технологии и комфорт</h3>
-      <p class="adv-desc">
+      <h3 class="adv-title" data-i18n="adv_07_t">Технологии и комфорт</h3>
+      <p class="adv-desc" data-i18n="adv_07_d">
         Интегрируем современные инженерные решения и «умный дом», создавая пространство, которым удобно управлять и пользоваться каждый день.
       </p>
     </div>
@@ -2341,26 +2809,26 @@ body.menu-open .mobile-cta { transform: translateY(110%); }
           <svg viewBox="0 0 24 24"><path d="M15 7a4 4 0 10-5.7 3.6L4 16v4h4v-2h2v-2l2.4-2.4A4 4 0 0015 7z"/><circle cx="15" cy="7" r="1.5"/></svg>
         </div>
       </div>
-      <h3 class="adv-title">Готовый результат</h3>
-      <p class="adv-desc">
+      <h3 class="adv-title" data-i18n="adv_08_t">Готовый результат</h3>
+      <p class="adv-desc" data-i18n="adv_08_d">
         Заказчик получает не просто проект, а полностью реализованное пространство — готовое к жизни, работе или приёму гостей.
       </p>
     </div>
   </div>
 
   <div class="svc-manifest reveal" style="margin-top: 36px;">
-    <p>
+    <p data-i18n="svc_manifest">
       Работая с LA Project, вы получаете одного ответственного партнёра на всём пути — от идеи до готового объекта. Мы создаём индивидуальные решения, контролируем качество и бюджет, берём на себя комплектацию, подрядчиков и реализацию, чтобы заказчик экономил время и получал именно тот результат, который был задуман.
     </p>
   </div>
 </section>
 
-<!-- ─── 6. О НАС ──────────────────────────────────────── -->
+<!-- ─── 7. О НАС ──────────────────────────────────────── -->
 <section class="wrap" id="about" style="margin-top: 40px;">
   <div class="sec-head reveal">
     <div>
-      <div class="eyebrow">Основатель и ведущий архитектор</div>
-      <h2>О студии</h2>
+      <div class="eyebrow" data-i18n="about_eyebrow">Основатель и ведущий архитектор</div>
+      <h2 data-i18n="about_title">О студии</h2>
     </div>
   </div>
 
@@ -2373,25 +2841,25 @@ body.menu-open .mobile-cta { transform: translateY(110%); }
           <img src="img/leyla.jpg" alt="Лейла Арифова — основатель и ведущий архитектор LA Project"
                width="682" height="1024" loading="lazy" decoding="async" />
         </picture>
-        <div class="fe-caption">Лейла Арифова · Основатель студии</div>
+        <div class="fe-caption" data-i18n="about_caption">Лейла Арифова · Основатель студии</div>
       </div>
       <div class="fe-article">
-        <div class="eyebrow">Практика с 1996 года</div>
-        <h2 class="fe-headline">Лейла Арифова</h2>
-        <p class="fe-quote">
+        <div class="eyebrow" data-i18n="about_exp">Практика с 1996 года</div>
+        <h2 class="fe-headline" data-i18n="about_name">Лейла Арифова</h2>
+        <p class="fe-quote" data-i18n="about_quote">
           «Создание пространства — это сотворение персонального мира для человека. Мы создаём атмосферу безупречного комфорта, в которую хочется возвращаться.»
         </p>
-        <p class="fe-text">
+        <p class="fe-text" data-i18n="about_t1">
           Архитектурное бюро LA Project ведёт каждый объект комплексно: от генерального плана и посадки на рельеф до текстильного оформления и авторского надзора. Мы одинаково уверенно работаем в современной классике, неоклассике, ар-деко и минимализме, подбирая архитектурный язык под личность владельца и ландшафт.
         </p>
-        <p class="fe-text">
+        <p class="fe-text" data-i18n="about_t2">
           <strong>Уникальность подхода:</strong> Мы не создаём шаблонных решений. Проект начинается с детального погружения в сценарии жизни семьи: от утренних ритуалов и маршрутов передвижения до акустического комфорта и светового микроклимата. Каждая резиденция и интерьер — это штучное авторское произведение, отражающее статус, характер и внутренний мир своего владельца.
         </p>
-        <p class="fe-text">
+        <p class="fe-text" data-i18n="about_t3">
           Деятельность бюро лицензирована государством по III категории (ГАСК № 19011889). Все конструктивные решения выполняются по высшим стандартам сейсмостойкости и долговечности.
         </p>
         <div style="margin-top: 32px;">
-          <a href="#brief" class="btn btn-gold">Обсудить проект →</a>
+          <a href="#brief" class="btn btn-gold" data-i18n="nav_discuss">Обсудить проект →</a>
         </div>
       </div>
     </div>
@@ -2399,23 +2867,23 @@ body.menu-open .mobile-cta { transform: translateY(110%); }
     <div class="fe-stats">
       <div class="stat-box">
         <div class="stat-val">100+</div>
-        <div class="stat-lbl">Объектов</div>
-        <div class="stat-sub">Резиденции, виллы, апартаменты и отели</div>
+        <div class="stat-lbl" data-i18n="stat_objs">Объектов</div>
+        <div class="stat-sub" data-i18n="stat_objs_sub">Резиденции, виллы, апартаменты и отели</div>
       </div>
       <div class="stat-box">
         <div class="stat-val">1996</div>
-        <div class="stat-lbl">Опыт</div>
-        <div class="stat-sub">Непрерывная архитектурная практика</div>
+        <div class="stat-lbl" data-i18n="stat_exp">Опыт</div>
+        <div class="stat-sub" data-i18n="stat_exp_sub">Непрерывная архитектурная практика</div>
       </div>
       <div class="stat-box">
         <div class="stat-val">III</div>
-        <div class="stat-lbl">Лицензии ГАСК</div>
-        <div class="stat-sub">Гослицензии № 19011889, № 19011890</div>
+        <div class="stat-lbl" data-i18n="stat_lic">Лицензии ГАСК</div>
+        <div class="stat-sub" data-i18n="stat_lic_sub">Гослицензии № 19011889, № 19011890</div>
       </div>
       <div class="stat-box">
         <div class="stat-val">100%</div>
-        <div class="stat-lbl">Надзор</div>
-        <div class="stat-sub">Контроль каждого этапа строительных работ</div>
+        <div class="stat-lbl" data-i18n="stat_sup">Надзор</div>
+        <div class="stat-sub" data-i18n="stat_sup_sub">Контроль каждого этапа строительных работ</div>
       </div>
     </div>
   </div>
@@ -2424,18 +2892,18 @@ body.menu-open .mobile-cta { transform: translateY(110%); }
 <!-- Бегущая строка -->
 <div class="marquee reveal">
   <div class="marquee-in">
-    <span>Архитектурное проектирование</span>
-    <span>Дизайн интерьеров</span>
-    <span>Авторский надзор</span>
-    <span>Комплектация под ключ</span>
-    <span>Гослицензия ГАСК № 19011889</span>
-    <span>Алматы и Казахстан</span>
-    <span>Архитектурное проектирование</span>
-    <span>Дизайн интерьеров</span>
-    <span>Авторский надзор</span>
-    <span>Комплектация под ключ</span>
-    <span>Гослицензия ГАСК № 19011889</span>
-    <span>Алматы и Казахстан</span>
+    <span data-i18n="mq_item_1">Архитектурное проектирование</span>
+    <span data-i18n="mq_item_2">Дизайн интерьеров</span>
+    <span data-i18n="mq_item_3">Авторский надзор</span>
+    <span data-i18n="mq_item_4">Комплектация под ключ</span>
+    <span data-i18n="mq_item_5">Гослицензия ГАСК № 19011889</span>
+    <span data-i18n="mq_item_6">Алматы и Казахстан</span>
+    <span data-i18n="mq_item_1">Архитектурное проектирование</span>
+    <span data-i18n="mq_item_2">Дизайн интерьеров</span>
+    <span data-i18n="mq_item_3">Авторский надзор</span>
+    <span data-i18n="mq_item_4">Комплектация под ключ</span>
+    <span data-i18n="mq_item_5">Гослицензия ГАСК № 19011889</span>
+    <span data-i18n="mq_item_6">Алматы и Казахстан</span>
   </div>
 </div>
 
@@ -2443,32 +2911,32 @@ body.menu-open .mobile-cta { transform: translateY(110%); }
 <section class="wrap" id="brief" style="margin-top: 40px;">
   <div class="sec-head reveal">
     <div>
-      <div class="eyebrow">Контакты</div>
-      <h2>Обсудить ваш проект</h2>
+      <div class="eyebrow" data-i18n="brief_eyebrow">Контакты</div>
+      <h2 data-i18n="brief_title">Обсудить ваш проект</h2>
     </div>
   </div>
 
   <div class="brief-section reveal">
     <div class="brief-l">
       <div>
-        <h2 style="font-size: 32px;">Персональная встреча</h2>
-        <p>
+        <h2 style="font-size: 32px;" data-i18n="brief_meet_t">Персональная встреча</h2>
+        <p data-i18n="brief_meet_d">
           Расскажите о вашей задаче: квартире, доме или коммерческом объекте. Мы свяжемся с вами и согласуем встречу в нашем бюро.
         </p>
       </div>
 
       <div class="brief-contacts">
         <div class="bc-item">
-          <span>Телефон / WhatsApp</span>
+          <span data-i18n="f_phone_lbl">Телефон / WhatsApp</span>
           <div><a href="https://wa.me/77017864680" target="_blank" rel="noopener">+7 701 786 46 80</a></div>
         </div>
         <div class="bc-item">
-          <span>Электронная почта</span>
+          <span data-i18n="f_email_lbl">Электронная почта</span>
           <div><a href="mailto:laproject.kz@gmail.com">laproject.kz@gmail.com</a></div>
         </div>
         <div class="bc-item">
-          <span>Адрес бюро</span>
-          <div>г. Алматы, ул. Розыбакиева 247А/1, ЖК «Вавилон», корп. 8, оф. 38</div>
+          <span data-i18n="f_addr_lbl">Адрес бюро</span>
+          <div data-i18n="f_addr_val">г. Алматы, ул. Розыбакиева 247А/1, ЖК «Вавилон», корп. 8, оф. 38</div>
         </div>
       </div>
     </div>
@@ -2476,19 +2944,19 @@ body.menu-open .mobile-cta { transform: translateY(110%); }
     <div class="brief-r">
       <div class="f-row">
         <div class="f-g">
-          <label for="f-name">Имя</label>
+          <label for="f-name" data-i18n="f_lbl_name">Имя</label>
           <input id="f-name" name="name" type="text" autocomplete="name"
                  enterkeyhint="next" placeholder="Как к вам обращаться" />
         </div>
         <div class="f-g">
-          <label for="f-contact">Телефон или WhatsApp</label>
+          <label for="f-contact" data-i18n="f_lbl_tel">Телефон или WhatsApp</label>
           <input id="f-contact" name="tel" type="tel" inputmode="tel" autocomplete="tel"
                  enterkeyhint="next" placeholder="+7 (___) ___-__-__" />
         </div>
       </div>
       <div class="f-row">
         <div class="f-g">
-          <label for="f-dir">Направление</label>
+          <label for="f-dir" data-i18n="f_lbl_dir">Направление</label>
           <select id="f-dir">
             <option>Архитектурное проектирование</option>
             <option>Дизайн интерьера</option>
@@ -2497,7 +2965,7 @@ body.menu-open .mobile-cta { transform: translateY(110%); }
           </select>
         </div>
         <div class="f-g">
-          <label for="f-type">Тип объекта</label>
+          <label for="f-type" data-i18n="f_lbl_type">Тип объекта</label>
           <select id="f-type">
             <option>Загородный дом / Резиденция</option>
             <option>Апартаменты / Квартира</option>
@@ -2507,27 +2975,27 @@ body.menu-open .mobile-cta { transform: translateY(110%); }
         </div>
       </div>
       <div class="f-g">
-        <label for="f-msg">Сообщение</label>
+        <label for="f-msg" data-i18n="f_lbl_msg">Сообщение</label>
         <textarea id="f-msg" name="message" rows="4" enterkeyhint="send"
                   placeholder="Локация, площадь, пожелания по стилю..."></textarea>
       </div>
       <div style="display: flex; flex-direction: column; gap: 12px;">
-        <button class="btn btn-gold" id="f-send" style="height: 48px; width: 100%;">
+        <button class="btn btn-gold" id="f-send" style="height: 48px; width: 100%;" data-i18n="f_btn_send">
           Отправить заявку в бюро →
         </button>
-        <a href="https://wa.me/77017864680" target="_blank" rel="noopener" class="btn btn-line" id="f-wa-direct" style="height: 48px; width: 100%; text-align: center;">
+        <a href="https://wa.me/77017864680" target="_blank" rel="noopener" class="btn btn-line" id="f-wa-direct" style="height: 48px; width: 100%; text-align: center;" data-i18n="f_btn_wa">
           Обсудить проект в WhatsApp ↗
         </a>
       </div>
       <div class="f-ok" id="f-ok" style="display: none; margin-top: 16px; padding: 14px 18px; border: 1px solid var(--accent); background: var(--accent-glow);">
-        <strong style="color: var(--accent); display: block; margin-bottom: 4px;">✓ Заявка успешно принята</strong>
-        <span>Спасибо! Мы свяжемся с вами в течение 15 минут для уточнения деталей.</span>
+        <strong style="color: var(--accent); display: block; margin-bottom: 4px;" data-i18n="f_ok_title">✓ Заявка успешно принята</strong>
+        <span data-i18n="f_ok_text">Спасибо! Мы свяжемся с вами в течение 15 минут для уточнения деталей.</span>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ─── 6. ФУТЕР ──────────────────────────────────────── -->
+<!-- ─── 8. ФУТЕР ──────────────────────────────────────── -->
 <footer class="foot">
   <div class="foot-in">
     <div>
@@ -2539,62 +3007,75 @@ body.menu-open .mobile-cta { transform: translateY(110%); }
         </svg>
         <span>LA PROJECT</span>
       </a>
-      <p>
+      <p data-i18n="foot_desc">
         Архитектурное проектирование и авторский дизайн интерьеров.<br />
         Алматы, Казахстан. Опыт с 1996 года.
       </p>
     </div>
 
     <div>
-      <h4>Разделы</h4>
+      <h4 data-i18n="foot_nav_t">Разделы</h4>
       <ul>
-        <li><a href="#gallery">Галерея</a></li>
-        <li><a href="#services">Услуги</a></li>
-        <li><a href="#stages">Как строится дом</a></li>
-        <li><a href="#benefits">Что получает заказчик</a></li>
-        <li><a href="#about">О нас</a></li>
+        <li><a href="#gallery" data-i18n="nav_gallery">Галерея</a></li>
+        <li><a href="#services" data-i18n="nav_services">Услуги</a></li>
+        <li><a href="#stages" data-i18n="nav_stages">Как строится дом</a></li>
+        <li><a href="#quiz" data-i18n="nav_quiz">Рассчитать проект</a></li>
+        <li><a href="#benefits" data-i18n="nav_benefits">Что получает заказчик</a></li>
+        <li><a href="#about" data-i18n="nav_about">О нас</a></li>
       </ul>
     </div>
 
     <div>
-      <h4>Направления</h4>
+      <h4 data-i18n="foot_dirs_t">Направления</h4>
       <ul>
-        <li><a href="#architecture">Частные резиденции</a></li>
-        <li><a href="#interiors">Интерьеры квартир и вилл</a></li>
-        <li><a href="#services">Авторский надзор</a></li>
-        <li><a href="#services">Инженерия</a></li>
+        <li><a href="#architecture" data-i18n="arch_title">Частные резиденции</a></li>
+        <li><a href="#interiors" data-i18n="int_title">Интерьеры квартир и вилл</a></li>
+        <li><a href="#services" data-i18n="svc_05_name">Авторский надзор</a></li>
+        <li><a href="#services" data-i18n="svc_04_name">Инженерия</a></li>
       </ul>
     </div>
 
     <div>
-      <h4>Контакты</h4>
+      <h4 data-i18n="foot_contacts_t">Контакты</h4>
       <div class="foot-c">
-        <b>Электронная почта</b>
+        <b data-i18n="f_email_lbl">Электронная почта</b>
         <a href="mailto:laproject.kz@gmail.com">laproject.kz@gmail.com</a>
       </div>
       <div class="foot-c">
-        <b>Телефон / WhatsApp</b>
+        <b data-i18n="f_phone_lbl">Телефон / WhatsApp</b>
         <a href="https://wa.me/77017864680" target="_blank" rel="noopener">+7 701 786 46 80</a>
       </div>
       <div class="foot-c">
-        <b>Адрес бюро</b>
-        Алматы, ул. Розыбакиева 247А/1, ЖК «Вавилон», корп. 8, оф. 38
+        <b data-i18n="f_addr_lbl">Адрес бюро</b>
+        <span data-i18n="f_addr_val">Алматы, ул. Розыбакиева 247А/1, ЖК «Вавилон», корп. 8, оф. 38</span>
       </div>
     </div>
   </div>
 
   <div class="foot-bot">
-    <span>© 2026 ТОО «LA Project» · БИН 130740018955 · Гослицензии ГАСК № 19011889, № 19011890</span>
-    <span>Алматы, Казахстан</span>
+    <span data-i18n="foot_copy">© 2026 ТОО «LA Project» · БИН 130740018955 · Гослицензии ГАСК № 19011889, № 19011890</span>
+    <span data-i18n="foot_city">Алматы, Казахстан</span>
   </div>
 </footer>
 
-<!-- ─── ПОЛНОЭКРАННЫЙ ЛАЙТБОКС ПРОЕКТА ─────────────────── -->
+<!-- ─── ПОЛНОЭКРАННЫЙ ЛАЙТБОКС ПРОЕКТА (С НАВИГАЦИЕЙ И SHARE) ─── -->
 <div class="lightbox" id="lightbox">
   <div class="lightbox-in">
     <div class="lightbox-top">
-      <span class="eyebrow" id="lb-dir">Архитектурный проект</span>
-      <button class="lightbox-x" id="lb-x" aria-label="Закрыть проект">✕</button>
+      <span class="eyebrow" id="lb-dir" data-i18n="lb_dir_arch">Архитектурный проект</span>
+      <div class="lb-top-actions">
+        <button class="lb-nav-btn" id="lb-prev-proj" aria-label="Предыдущий проект" data-i18n="lb_prev_proj">← Предыдущий</button>
+        <button class="lb-nav-btn" id="lb-next-proj" aria-label="Следующий проект" data-i18n="lb_next_proj">Следующий →</button>
+        <button class="lb-share-btn" id="lb-share-btn" title="Поделиться проектом" aria-label="Поделиться">
+          <svg viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+        </button>
+        <button class="lightbox-x" id="lb-x" aria-label="Закрыть" title="Закрыть (Esc)">
+          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
     </div>
     <div class="lightbox-header">
       <span class="card-tag" id="lb-tag">Частный дом</span>
@@ -2605,46 +3086,71 @@ body.menu-open .mobile-cta { transform: translateY(110%); }
     </div>
     <div class="lightbox-gallery" id="lb-gallery"></div>
     <div class="lb-cta-inline" style="margin-top: 48px; padding-top: 32px; border-top: 1px solid var(--border); text-align: center;">
-      <a href="#brief" class="btn btn-gold" id="lb-cta">Обсудить похожий проект →</a>
+      <a href="#brief" class="btn btn-gold" id="lb-cta" data-i18n="lb_cta">Обсудить похожий проект →</a>
     </div>
   </div>
   <!-- На мобильном та же кнопка закреплена внизу экрана -->
   <div class="lightbox-cta-bar">
-    <a href="#brief" class="btn btn-gold" id="lb-cta-m">Обсудить похожий проект →</a>
+    <a href="#brief" class="btn btn-gold" id="lb-cta-m" data-i18n="lb_cta">Обсудить похожий проект →</a>
+  </div>
+</div>
+
+<!-- ─── ЗУМ-ОВЕРЛЕЙ ДЛЯ ЧЕРТЕЖЕЙ И ФОТО ───────────────── -->
+<div class="zoom-overlay" id="zoom-overlay">
+  <button class="zoom-close" id="zoom-close" aria-label="Закрыть" title="Закрыть (Esc)">
+    <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <line x1="18" y1="6" x2="6" y2="18"></line>
+      <line x1="6" y1="6" x2="18" y2="18"></line>
+    </svg>
+  </button>
+  <img id="zoom-img" src="" alt="Детальный просмотр" />
+</div>
+
+<!-- ─── ВСПЛЫВАЮЩЕЕ УВЕДОМЛЕНИЕ (TOAST) ───────────────── -->
+<div class="toast" id="toast" data-i18n="lb_copied">✓ Ссылка на проект скопирована в буфер!</div>
+
+<!-- ─── МОДАЛЬНОЕ ОКНО LOOKBOOK (ФИЧА 5) ──────────────── -->
+<div class="lookbook-modal" id="lookbook-modal">
+  <div class="lookbook-card">
+    <button class="lookbook-close" id="lookbook-close" aria-label="Закрыть" title="Закрыть">
+      <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>
+    </button>
+    <div class="eyebrow" style="margin-bottom: 8px;" data-i18n="nav_lookbook">Lookbook 2026</div>
+    <h3 data-i18n="lookbook_title" style="margin-bottom: 8px;">Презентация и портфолио бюро</h3>
+    <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em; color: var(--accent); margin-bottom: 14px; font-weight: 600;" data-i18n="lookbook_meta_badge">19 проектов · 25 страниц · Все разделы (АР, КР, Интерьеры)</div>
+    <p data-i18n="lookbook_sub" style="margin-bottom: 24px;">Ознакомьтесь с генеральным каталогом реализованных проектов и архитектурных концепций LA Project.</p>
+    <div style="display: flex; flex-direction: column; gap: 10px;">
+      <a href="LA_Project_Portfolio_2026.pdf" download="LA_Project_Portfolio_2026.pdf" class="btn btn-gold" id="lookbook-download-btn" data-i18n="lookbook_btn_download">Скачать PDF-презентацию ↓ (5.3 МБ)</a>
+      <a href="lookbook.html" target="_blank" rel="noopener" class="btn btn-line" id="lookbook-online-btn" data-i18n="lookbook_btn_online">Открыть Lookbook онлайн ↗</a>
+      <a href="https://wa.me/77017864680?text=%D0%97%D0%B4%D1%80%D0%B0%D0%B2%D1%81%D1%82%D0%B2%D1%83%D0%B9%D1%82%D0%B5!%20%D0%9E%D1%82%D0%BF%D1%80%D0%B0%D0%B2%D1%8C%D1%82%D0%B5,%20%D0%BF%D0%BE%D0%B6%D0%B0%D0%BB%D1%83%D0%B9%D1%81%D1%82%D0%B0,%20%D0%BF%D0%BE%D0%BB%D0%BD%D1%8B%D0%B9%20PDF-Lookbook%20%D0%BF%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D0%BE%D0%B2%20LA%20Project" target="_blank" rel="noopener" class="btn btn-line" data-i18n="lookbook_btn_wa" style="font-size: 11px; opacity: 0.85;">Получить Lookbook в WhatsApp ↗</a>
+    </div>
   </div>
 </div>
 
 <button class="totop" id="totop" aria-label="Наверх">↑</button>
 
-<!-- Липкая панель действий (только мобильные): звонок и WhatsApp
-     доступны с любого места страницы, а не только из футера. -->
+<!-- Липкая панель действий (только мобильные) -->
 <div class="mobile-cta" id="mobile-cta">
   <a href="tel:+77017864680" aria-label="Позвонить в бюро">
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.9v3a2 2 0 01-2.2 2 19.8 19.8 0 01-8.6-3.1 19.5 19.5 0 01-6-6A19.8 19.8 0 012.1 4.2 2 2 0 014.1 2h3a2 2 0 012 1.7c.1 1 .4 1.9.7 2.8a2 2 0 01-.5 2.1L8.1 9.9a16 16 0 006 6l1.3-1.2a2 2 0 012.1-.5c.9.3 1.8.6 2.8.7a2 2 0 011.7 2z"/></svg>
-    Позвонить
+    <span data-i18n="m_call">Позвонить</span>
   </a>
   <a href="https://wa.me/77017864680" target="_blank" rel="noopener" class="primary" aria-label="Написать в WhatsApp">
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 01-12.6 7.3L3 20.5l1.8-5.3A8.4 8.4 0 1121 11.5z"/></svg>
-    WhatsApp
+    <span data-i18n="m_wa">WhatsApp</span>
   </a>
 </div>
 
-<!-- ─── АНАЛИТИКА ──────────────────────────────────────
-     ВПИСАТЬ НОМЕР СЧЁТЧИКА: заведите счётчик на metrika.yandex.ru,
-     подставьте его номер вместо null — и цели заработают сами.
-     Цели, которые отправляет app.js:
-       form_submit     — заявка успешно отправлена
-       whatsapp_click  — клик по кнопке WhatsApp
-       phone_click     — клик по телефону
-       email_click     — клик по e-mail
-       project_open    — открыт проект в галерее
-     В Метрике эти цели создаются как «JavaScript-событие» с таким же идентификатором. -->
+<!-- ─── АНАЛИТИКА ────────────────────────────────────── -->
 <script>
   window.LA_METRIKA_ID = null; // ← сюда номер счётчика, например 98765432
 </script>
 <script>
 (function (m, e, t, r, i, k, a) {
-  if (!window.LA_METRIKA_ID) return;             // счётчик не задан — ничего не грузим
+  if (!window.LA_METRIKA_ID) return;
   m[i] = m[i] || function () { (m[i].a = m[i].a || []).push(arguments); };
   m[i].l = 1 * new Date();
   k = e.createElement(t); a = e.getElementsByTagName(t)[0];
@@ -2663,6 +3169,7 @@ if (window.LA_METRIKA_ID) {
 </script>
 <script src="img-sizes.js"></script>
 <script src="data.js"></script>
+<script src="i18n.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
