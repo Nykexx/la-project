@@ -603,15 +603,21 @@
 
   // Сенсорный свайп закрытия лайтбокса
   if (lightbox) {
+    let swipeStartX = 0;
     let swipeStartY = 0;
     let swipeArmed = false;
     lightbox.addEventListener('touchstart', e => {
+      swipeStartX = e.changedTouches[0].clientX;
       swipeStartY = e.changedTouches[0].clientY;
-      swipeArmed = lightbox.scrollTop <= 4;
+      swipeArmed = lightbox.scrollTop <= 6;
     }, { passive: true });
     lightbox.addEventListener('touchend', e => {
-      if (!swipeArmed) return;
-      if (e.changedTouches[0].clientY - swipeStartY > 90) closeLightbox();
+      if (zoomOverlay && zoomOverlay.classList.contains('open')) return;
+      const diffX = e.changedTouches[0].clientX - swipeStartX;
+      const diffY = e.changedTouches[0].clientY - swipeStartY;
+      if (swipeArmed && diffY > 90 && Math.abs(diffY) > Math.abs(diffX) * 1.5) {
+        closeLightbox();
+      }
     }, { passive: true });
   }
 
@@ -897,6 +903,25 @@
 
   const stTrack = $('#st-track');
   if (stTrack) {
+    let touchStartX = 0;
+    let touchStartY = 0;
+    stTrack.addEventListener('touchstart', e => {
+      touchStartX = e.changedTouches[0].clientX;
+      touchStartY = e.changedTouches[0].clientY;
+    }, { passive: true });
+
+    stTrack.addEventListener('touchend', e => {
+      const diffX = e.changedTouches[0].clientX - touchStartX;
+      const diffY = e.changedTouches[0].clientY - touchStartY;
+      if (Math.abs(diffX) > 40 && Math.abs(diffX) > Math.abs(diffY)) {
+        if (diffX < 0) {
+          showStage((curStage + 1) % STAGES.length);
+        } else {
+          showStage((curStage - 1 + STAGES.length) % STAGES.length);
+        }
+      }
+    }, { passive: true });
+
     const stObserver = new IntersectionObserver(entries => {
       entries.forEach(en => {
         if (en.isIntersecting && !stageStarted) {

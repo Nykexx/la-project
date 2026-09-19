@@ -795,6 +795,154 @@
       line-height: 1.5;
     }
 
+    /* ── МОБИЛЬНАЯ АДАПТАЦИЯ ЭКРАНА LOOKBOOK ── */
+    @media screen and (max-width: 960px) {
+      .lb-toolbar {
+        padding: 10px 16px;
+        flex-direction: column;
+        gap: 12px;
+        align-items: stretch;
+      }
+      .lb-toolbar-brand {
+        justify-content: space-between;
+      }
+      .lb-toolbar-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        justify-content: space-between;
+      }
+      .lb-lang-group {
+        flex: 1 1 auto;
+        justify-content: center;
+      }
+      .lb-lang-btn {
+        flex: 1;
+        text-align: center;
+        padding: 8px 10px;
+      }
+      .lb-btn {
+        flex: 1 1 calc(50% - 6px);
+        justify-content: center;
+        padding: 8px 10px;
+        font-size: 11px;
+        min-height: 40px;
+      }
+      .pages-container {
+        padding: 16px 12px 64px;
+        gap: 20px;
+        width: 100%;
+        max-width: 760px;
+      }
+      .page {
+        width: 100%;
+        height: auto;
+        min-height: auto;
+        padding: 24px 18px 16px;
+        border-radius: 8px;
+        box-shadow: 0 10px 32px rgba(0, 0, 0, 0.7);
+        page-break-after: auto;
+        break-after: auto;
+      }
+      .page-cover {
+        padding: 0;
+        min-height: 540px;
+      }
+      .cover-border-frame {
+        inset: 10px;
+      }
+      .cover-content {
+        padding: 24px 18px;
+        gap: 24px;
+      }
+      .cover-title {
+        font-size: 32px;
+        line-height: 1.15;
+      }
+      .cover-bottom {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+      }
+      .cover-meta-item[style*="text-align: right"] {
+        text-align: left !important;
+      }
+      .about-layout {
+        grid-template-columns: 1fr;
+        gap: 20px;
+      }
+      .about-photo {
+        height: 260px;
+      }
+      .about-services-grid {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+      .about-stats-row {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+      }
+      .divider-title {
+        font-size: 32px;
+      }
+      .divider-num {
+        font-size: 80px;
+      }
+      .project-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+      }
+      .project-header-left {
+        max-width: 100%;
+      }
+      .project-header-right {
+        text-align: left;
+      }
+      .project-title {
+        font-size: 20px;
+      }
+      .project-body {
+        grid-template-columns: 1fr;
+        gap: 16px;
+      }
+      .project-visuals {
+        gap: 8px;
+      }
+      .project-main-img-wrap {
+        height: 240px;
+      }
+      .project-gallery-thumbs {
+        height: 64px;
+      }
+      .project-facts-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+      .contacts-page-layout {
+        grid-template-columns: 1fr;
+        gap: 24px;
+      }
+      .contacts-title {
+        font-size: 28px;
+      }
+    }
+
+    @media screen and (max-width: 480px) {
+      .cover-title {
+        font-size: 26px;
+      }
+      .project-facts-grid {
+        grid-template-columns: 1fr;
+      }
+      .about-stats-row {
+        grid-template-columns: 1fr 1fr;
+      }
+      .lb-btn {
+        flex: 1 1 100%;
+      }
+    }
+
     /* ── СТИЛИ ДЛЯ ПЕЧАТИ В PDF ── */
     @media print {
       @page {
@@ -886,7 +1034,7 @@
           coverTitle: "Генеральный каталог & <span>Lookbook проектов</span>",
           coverSubtitle: "Авторская архитектура премиальных частных резиденций, общественных пространств и эксклюзивных интерьеров.",
           licLabel: "Государственная лицензия",
-          licVal: "ГАСК № 19011889 (III категория)",
+          licVal: "ГАСК № 19011889 (II категория)",
           expLabel: "Архитектурный опыт",
           expVal: "Непрерывная практика с 1996 года",
           cityLabel: "Локация бюро",
@@ -908,7 +1056,7 @@
           cPhone: "Телефон / WhatsApp",
           cEmail: "Электронная почта",
           cAddress: "Офис бюро",
-          cAddressVal: "г. Алматы, пр. Аль-Фараби, БЦ «Нурлы Тау»",
+          cAddressVal: "г. Алматы, 12 мкрн, дом 22/2",
           cardTitle: "LA PROJECT STUDIO",
           cardText: "Комплексное проектирование, интерьеры, генеральный подряд и авторский надзор.",
           cardLic: "Лицензии ГАСК № 19011889, № 19011890<br>© 2026 LA Project. Все права защищены."
@@ -922,7 +1070,7 @@
           coverTitle: "Бас каталог & <span>Жобалар Lookbook-і</span>",
           coverSubtitle: "Премиум деңгейдегі жеке резиденциялар, қоғамдық кеңістіктер және эксклюзивті интерьерлер сәулеті.",
           licLabel: "Мемлекеттік лицензия",
-          licVal: "МСҚК № 19011889 (III санат)",
+          licVal: "МСҚК № 19011889 (II санат)",
           expLabel: "Сәулеттік тәжірибе",
           expVal: "1996 жылдан бергі үзіліссіз тәжірибе",
           cityLabel: "Бюро орналасқан жері",
@@ -944,7 +1092,7 @@
           cPhone: "Телефон / WhatsApp",
           cEmail: "Электрондық пошта",
           cAddress: "Бюро кеңсесі",
-          cAddressVal: "Алматы қ., Әл-Фараби даңғылы, «Нұрлы Тау» БО",
+          cAddressVal: "Алматы қ., 12-шағынаудан, 22/2 үй",
           cardTitle: "LA PROJECT STUDIO",
           cardText: "Кешенді жобалау, интерьерлер, бас мердігерлік және авторлық қадағалау.",
           cardLic: "МСҚК лицензиялары № 19011889, № 19011890<br>© 2026 LA Project. Барлық құқықтар қорғалған."
@@ -958,7 +1106,7 @@
           coverTitle: "Master Catalog & <span>Projects Lookbook</span>",
           coverSubtitle: "Bespoke architecture of premium private residences, commercial landmarks, and haute couture interiors.",
           licLabel: "State License",
-          licVal: "GASK No. 19011889 (Category III)",
+          licVal: "GASK No. 19011889 (Category II)",
           expLabel: "Architectural Practice",
           expVal: "Continuous practice since 1996",
           cityLabel: "Headquarters",
@@ -980,7 +1128,7 @@
           cPhone: "Phone / WhatsApp",
           cEmail: "Direct Email",
           cAddress: "Studio Address",
-          cAddressVal: "Almaty, Al-Farabi Ave, Nurly Tau Business Center",
+          cAddressVal: "Almaty, 12th Microdistrict, Bld. 22/2",
           cardTitle: "LA PROJECT STUDIO",
           cardText: "Full-cycle architectural engineering, interior design, turnkey construction, and supervision.",
           cardLic: "State licenses No. 19011889, No. 19011890<br>© 2026 LA Project. All rights reserved."
@@ -1094,7 +1242,7 @@
                     <span>Лет практики</span>
                   </div>
                   <div class="about-stat-item">
-                    <strong>III кат.</strong>
+                    <strong>II кат.</strong>
                     <span>Лицензия ГАСК</span>
                   </div>
                   <div class="about-stat-item">
